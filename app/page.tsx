@@ -459,7 +459,6 @@ export default function DashboardPage() {
   const [isLoadingOrders, setIsLoadingOrders] = useState(false) // CHANGE: Add loading state for orders
 
   const [selectedTechnicianId, setSelectedTechnicianId] = useState<number | null>(null)
-  const [statusObservaciones, setStatusObservaciones] = useState("")
   const [newStatus, setNewStatus] = useState("") // ADDED: State for new status in change status dialog
 
   // CHANGE: Updated report type to include cronograma
@@ -1359,7 +1358,7 @@ export default function DashboardPage() {
 
   const handleChangeStatus = async () => {
     if (selectedOrder && newStatus) {
-      const result = await cambiarEstadoOrden(selectedOrder.id, newStatus, statusObservaciones || undefined)
+      const result = await cambiarEstadoOrden(selectedOrder.id, newStatus)
       if (result && result.success && result.data) {
         // Update the selected order with the new data
         setSelectedOrder(result.data)
@@ -1372,7 +1371,6 @@ export default function DashboardPage() {
         })
         setIsStatusDialogOpen(false)
         setNewStatus("")
-        setStatusObservaciones("")
       } else {
         toast({
           variant: "destructive",
@@ -1665,31 +1663,26 @@ export default function DashboardPage() {
                               <DropdownMenuItem onClick={() => {
                                 setSelectedOrder(order)
                                 setNewStatus('abierta')
-                                setStatusObservaciones('')
                                 setIsStatusDialogOpen(true)
                               }}>Abierta</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => {
                                 setSelectedOrder(order)
                                 setNewStatus('en_progreso')
-                                setStatusObservaciones('')
                                 setIsStatusDialogOpen(true)
                               }}>En Progreso</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => {
                                 setSelectedOrder(order)
                                 setNewStatus('completada')
-                                setStatusObservaciones('')
                                 setIsStatusDialogOpen(true)
                               }}>Completada</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => {
                                 setSelectedOrder(order)
                                 setNewStatus('pospuesta')
-                                setStatusObservaciones('')
                                 setIsStatusDialogOpen(true)
                               }}>Pospuesta</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => {
                                 setSelectedOrder(order)
                                 setNewStatus('cancelada')
-                                setStatusObservaciones('')
                                 setIsStatusDialogOpen(true)
                               }}>Cancelada</DropdownMenuItem>
                             </DropdownMenuContent>
@@ -2215,18 +2208,6 @@ export default function DashboardPage() {
                   <SelectItem value="pospuesta">Pospuesta</SelectItem>
                 </SelectContent>
               </Select>
-              <div className="space-y-2">
-                <label htmlFor="observaciones" className="text-sm font-medium">
-                  Observaciones (opcional)
-                </label>
-                <Textarea
-                  id="observaciones"
-                  placeholder="Agregar observaciones sobre el cambio de estado..."
-                  value={statusObservaciones}
-                  onChange={(e) => setStatusObservaciones(e.target.value)}
-                  rows={3}
-                />
-              </div>
             </div>
             <DialogFooter>
               <Button
@@ -2234,7 +2215,6 @@ export default function DashboardPage() {
                 onClick={() => {
                   setIsStatusDialogOpen(false)
                   setNewStatus("")
-                  setStatusObservaciones("")
                 }}
               >
                 Cancelar

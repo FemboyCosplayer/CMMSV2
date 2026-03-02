@@ -368,7 +368,7 @@ export async function cambiarEstado(
   if (typeof window === 'undefined') {
     console.log("[v0] cambiarEstado - Using server DB function")
     try {
-      const result = await cambiarEstadoDB(ordenId, estadoTransformado)
+      const result = await cambiarEstadoDB(ordenId, estadoTransformado, observaciones)
       console.log("[v0] cambiarEstado - Response:", result)
       return result
     } catch (error) {

@@ -5215,10 +5215,12 @@ export default function DashboardPage() {
     setMaintenanceLoading(true)
 
     try {
+      console.log("[v0] handleSaveMaintenanceForm - Data being sent:", maintenanceForm)
       let result
       
       if (selectedMaintenance?.id) {
         // Update existing maintenance
+        console.log("[v0] Updating maintenance with ID:", selectedMaintenance.id)
         result = await updateMantenimiento(selectedMaintenance.id, maintenanceForm)
       } else {
         // Create new maintenance

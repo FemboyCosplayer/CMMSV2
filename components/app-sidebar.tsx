@@ -35,11 +35,9 @@ const menuItemsByRole = {
     { title: "Reportes", icon: BarChart3, id: "reportes" },
   ],
   tecnico: [
-    { title: "Dashboard", icon: BarChart3, id: "dashboard" },
-    { title: "Equipos", icon: Wrench, id: "equipos" },
-    { title: "Calendario", icon: Calendar, id: "mantenimiento" },
     { title: "Órdenes de trabajo", icon: FileText, id: "ordenes" },
-    { title: "Mis Reportes", icon: BarChart3, id: "reportes" },
+    { title: "Programar mantenimiento", icon: Settings, id: "mantenimiento" },
+    { title: "Reportes", icon: BarChart3, id: "reportes" },
   ],
 }
 

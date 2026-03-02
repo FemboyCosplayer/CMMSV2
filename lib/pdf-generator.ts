@@ -33,7 +33,7 @@ async function addHeader(doc: jsPDF, title: string) {
 
   try {
     // Load hospital logo (left side)
-    const hospitalLogo = await loadImage("/public/logo.png")
+    const hospitalLogo = await loadImage("/logo.png")
     doc.addImage(hospitalLogo, "PNG", 15, 10, 30, 30)
   } catch (error) {
     console.log("[v0] Hospital logo not loaded, using placeholder")
@@ -44,10 +44,10 @@ async function addHeader(doc: jsPDF, title: string) {
 
   try {
     // Load government logo (right side)
-    const govLogo = await loadImage("/public/Gobierno.jpg")
+    const govLogo = await loadImage("/Gobierno.jpg")
     doc.addImage(govLogo, "JPEG", pageWidth - 45, 10, 30, 30)
   } catch (error) {
-    console.log("[v0] Government logo not loaded, using placeholder")
+    console.log("[v0] Government logo not loaded")
     // Placeholder circle for government logo
     doc.setFillColor(0, 163, 224)
     doc.circle(pageWidth - 30, 25, 15, "F")
@@ -168,17 +168,23 @@ export async function generatePDF(options: {
       margin: { left: 15, right: 15 },
     })
   } else if (tipo === "mantenimientos") {
-    const tableData = data.map((mant) => [
-      mant.equipoNombre || mant.equipo || "-",
-      mant.tipo || "-",
-      mant.frecuencia || "-",
-      formatDate(mant.proximaFecha),
-      mant.estado || mant.resultado || "-",
-      mant.estadoEquipo || "-",
-    ])
+    const tableData = data.map((mant) => {
+      // Get resultado value and capitalize first letter
+      const resultado = mant.resultado || mant.estado || "-"
+      const displayResultado = resultado !== "-" ? resultado.charAt(0).toUpperCase() + resultado.slice(1) : "-"
+      
+      return [
+        mant.equipoNombre || mant.equipo || "-",
+        mant.tipo || "-",
+        mant.frecuencia || "-",
+        formatDate(mant.proximaFecha),
+        displayResultado,
+        mant.estadoEquipo || "-",
+      ]
+    })
     autoTable(doc, {
       startY: yPos,
-      head: [["Equipo", "Tipo", "Frecuencia", "Próxima Fecha", "Estado", "Estado Equipo"]],
+      head: [["Equipo", "Tipo", "Frecuencia", "Próxima Fecha", "Resultado", "Estado Equipo"]],
       body: tableData,
       theme: "striped",
       headStyles: {
@@ -219,8 +225,43 @@ export async function generatePDF(options: {
   return doc
 }
 
-export function downloadPDF(doc: jsPDF, filename: string) {
+export async function downloadPDF(doc: jsPDF, filename: string) {
+  // Download the PDF
   doc.save(filename)
+  
+  // Log the export to audit logs
+  try {
+    // Extract module name from filename
+    let modulo = 'Reportes'
+    let descripcion = `PDF exportado: ${filename}`
+    
+    if (filename.includes('Orden') || filename.includes('Trabajo')) {
+      modulo = 'Órdenes de Trabajo'
+      descripcion = `PDF exportado de orden: ${filename}`
+    } else if (filename.includes('ficha') || filename.includes('tecnica')) {
+      modulo = 'Equipos'
+      descripcion = `Ficha técnica exportada: ${filename}`
+    } else if (filename.includes('Reporte')) {
+      modulo = 'Reportes'
+      descripcion = `Reporte exportado: ${filename}`
+    }
+    
+    // Call API to create audit log
+    await fetch('/api/audit-log', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        accion: 'Exportar',
+        modulo,
+        descripcion,
+        datos: { filename, timestamp: new Date().toISOString() },
+      }),
+    })
+  } catch (error) {
+    // Silently fail audit logging to not disrupt user experience
+  }
 }
 
 export async function generateEquipmentTechnicalSheet(equipment: any) {
@@ -231,7 +272,7 @@ export async function generateEquipmentTechnicalSheet(equipment: any) {
   let yPos = 10
 
   try {
-    const hospitalLogo = await loadImage("/public/logo.png")
+    const hospitalLogo = await loadImage("/logo.png")
     doc.addImage(hospitalLogo, "PNG", 15, yPos, 30, 30)
   } catch (error) {
     console.log("[v0] Hospital logo not loaded, using placeholder")
@@ -240,10 +281,10 @@ export async function generateEquipmentTechnicalSheet(equipment: any) {
   }
 
   try {
-    const govLogo = await loadImage("/public/Gobierno.jpg")
+    const govLogo = await loadImage("/Gobierno.jpg")
     doc.addImage(govLogo, "JPEG", pageWidth - 45, yPos, 30, 30)
   } catch (error) {
-    console.log("[v0] Government logo not loaded, using placeholder")
+    console.log("[v0] Government logo not loaded")
     doc.setFillColor(0, 163, 224)
     doc.circle(pageWidth - 30, yPos + 15, 15, "F")
   }
@@ -551,8 +592,8 @@ export async function generateWorkOrderPDF(orden: any, equipo?: any) {
   }
 
   const formatCurrency = (amount: number | undefined): string => {
-    if (amount === undefined || amount === null) return "$0.00"
-    return `$${amount.toFixed(2)}`
+    if (amount === undefined || amount === null) return "Bs 0.00"
+    return `Bs ${amount.toFixed(2)}`
   }
 
   const getCurrentDate = (): string => {
@@ -565,7 +606,7 @@ export async function generateWorkOrderPDF(orden: any, equipo?: any) {
 
   // Header with logos
   try {
-    const hospitalLogo = await loadImage("/public/logo.png")
+    const hospitalLogo = await loadImage("/logo.png")
     doc.addImage(hospitalLogo, "PNG", 15, yPos, 30, 30)
   } catch (error) {
     console.log("[v0] Hospital logo not loaded, creating blue circle")
@@ -579,17 +620,12 @@ export async function generateWorkOrderPDF(orden: any, equipo?: any) {
   }
 
   try {
-    const govLogo = await loadImage("/public/Gobierno.jpg")
+    const govLogo = await loadImage("/Gobierno.jpg")
     doc.addImage(govLogo, "JPEG", pageWidth - 45, yPos, 30, 30)
   } catch (error) {
-    console.log("[v0] Government logo not loaded, creating blue circle")
+    console.log("[v0] Government logo not loaded")
     doc.setFillColor(0, 163, 224)
     doc.circle(pageWidth - 30, yPos + 15, 15, "F")
-    doc.setFontSize(20)
-    doc.setTextColor(255, 255, 255)
-    doc.setFont("helvetica", "bold")
-    doc.text("G", pageWidth - 30, yPos + 19, { align: "center" })
-    doc.setTextColor(0, 0, 0)
   }
 
   // Hospital name and details (center)
@@ -803,13 +839,6 @@ export async function generateWorkOrderPDF(orden: any, equipo?: any) {
   doc.setFont("helvetica", "normal")
   doc.text(formatCurrency(orden.costoTotal), 17 + colWidth * 2, yPos + 10)
 
-  // Observaciones (full width)
-  doc.setFont("helvetica", "bold")
-  doc.text("Observaciones", 17, yPos + 16)
-  doc.setFont("helvetica", "normal")
-  const obsText = orden.observaciones || "-"
-  doc.text(obsText, 17, yPos + 21)
-
   yPos += dataHeight + 5
 
   // Signatures section
@@ -857,16 +886,11 @@ async function generateCronogramaPDF(data: { equipos: any[]; mantenimientos: any
   }
 
   try {
-    const govLogo = await loadImage("/public/Gobierno.jpg")
+    const govLogo = await loadImage("/Gobierno.jpg")
     doc.addImage(govLogo, "JPEG", pageWidth - 40, yPos, 25, 25)
   } catch (error) {
     doc.setFillColor(0, 163, 224)
     doc.circle(pageWidth - 27.5, yPos + 12.5, 12.5, "F")
-    doc.setFontSize(16)
-    doc.setTextColor(255, 255, 255)
-    doc.setFont("helvetica", "bold")
-    doc.text("G", pageWidth - 27.5, yPos + 16, { align: "center" })
-    doc.setTextColor(0, 0, 0)
   }
 
   // Title

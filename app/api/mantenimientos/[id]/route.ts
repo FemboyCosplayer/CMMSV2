@@ -72,8 +72,6 @@ const updateMantenimientoSchema = z.object({
   procedimiento: z.string().optional(),
   tiempo_estimado: z.number().optional(),
   activo: z.boolean().optional(),
-  tecnicoAsignadoId: z.number().optional(),
-  responsableId: z.number().optional(),
 })
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
@@ -122,7 +120,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     if (data.procedimiento !== undefined) updateData.procedimiento = data.procedimiento
     if (data.tiempo_estimado !== undefined) updateData.tiempo_estimado = data.tiempo_estimado
     if (data.activo !== undefined) updateData.activo = data.activo
-    // tecnicoAsignadoId y responsableId no se guardan en mantenimiento (se guardan en MantenimientoRealizado)
     
     updateData.updated_at = new Date()
     

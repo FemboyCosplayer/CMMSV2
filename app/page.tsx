@@ -5071,7 +5071,6 @@ export default function DashboardPage() {
       observaciones: maintenance.observaciones || maintenance.descripcion,
       descripcion: maintenance.descripcion,
       procedimiento: maintenance.procedimiento,
-      responsableId: maintenance.creado_por,
     })
     setShowMaintenanceForm(true)
     setMaintenanceFormErrors({})
@@ -5589,44 +5588,7 @@ export default function DashboardPage() {
                 <p className="text-red-500 text-xs">{maintenanceFormErrors.frecuencia}</p>
               )}
             </div>
-            <div className="md:col-span-2 space-y-2">
-              <Label htmlFor="tecnicoAsignado">Técnico Asignado</Label>
-              <Select
-                value={maintenanceForm.tecnicoAsignadoId?.toString() || ""}
-                onValueChange={(value) => {
-                  const selectedTech = users.find((u) => u.id.toString() === value)
-                  setMaintenanceForm({
-                    ...maintenanceForm,
-                    tecnicoAsignadoId: value ? Number.parseInt(value) : undefined,
-                    tecnicoAsignado: selectedTech?.nombre,
-                  })
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar técnico (opcional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">Sin asignar</SelectItem>
-                  {users
-                    .filter((u) => {
-                      const rolLower = u.rol?.toLowerCase() || ""
-                      const rolMatch =
-                        rolLower === "técnico" ||
-                        rolLower === "tecnico" ||
-                        rolLower === "supervisor" ||
-                        rolLower === "administrador"
-                      const estadoMatch = u.estado?.toLowerCase() === "activo"
-                      return rolMatch && estadoMatch
-                    })
-                    .map((tech) => (
-                      <SelectItem key={tech.id} value={tech.id.toString()}>
-                        {tech.nombre} ({tech.rol})
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {/* </CHANGE> */}
+
             <div className="space-y-2">
               <Label htmlFor="proximaFecha">Próxima Fecha *</Label>
               <Input

@@ -45,6 +45,12 @@ export async function getAllMantenimientos(params?: {
         where,
         include: {
           equipo: true,
+          realizaciones: {
+            include: {
+              tecnico: true,
+            },
+            orderBy: { fecha_realizacion: 'desc' },
+          },
         },
         skip,
         take: perPage,
@@ -69,6 +75,12 @@ export async function getMantenimientoById(id: number) {
       where: { id },
       include: {
         equipo: true,
+        realizaciones: {
+          include: {
+            tecnico: true,
+          },
+          orderBy: { fecha_realizacion: 'desc' },
+        },
       }
     })
     

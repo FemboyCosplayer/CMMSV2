@@ -5214,12 +5214,10 @@ export default function DashboardPage() {
     setMaintenanceLoading(true)
 
     try {
-      console.log("[v0] handleSaveMaintenanceForm - Data being sent:", maintenanceForm)
       let result
       
       if (selectedMaintenance?.id) {
         // Update existing maintenance
-        console.log("[v0] Updating maintenance with ID:", selectedMaintenance.id)
         result = await updateMantenimiento(selectedMaintenance.id, maintenanceForm)
       } else {
         // Create new maintenance
@@ -5433,7 +5431,12 @@ export default function DashboardPage() {
                       </td>
                       <td className="px-4 py-2">
                         {(() => {
-                          const resultado = m.resultado || (isOverdue(m.proxima_programada) ? "vencido" : isUpcoming(m.proxima_programada) ? "próximo" : "pendiente")
+                          let resultado
+                          if (m.completado) {
+                            resultado = "completado"
+                          } else {
+                            resultado = m.resultado || (isOverdue(m.proxima_programada) ? "vencido" : isUpcoming(m.proxima_programada) ? "próximo" : "pendiente")
+                          }
                           const displayResultado = resultado.charAt(0).toUpperCase() + resultado.slice(1)
                           return <Badge className={`${getMaintenanceStatusColor(resultado)}`}>{displayResultado}</Badge>
                         })()}
@@ -5475,12 +5478,15 @@ export default function DashboardPage() {
                                 variant="outline"
                                 className="text-green-600 hover:text-green-700 bg-transparent"
                                 onClick={() => handleCompleteMaintenance(m)}
+                                disabled={m.completado}
                               >
                                 {/* CHANGE: Added green checkmark for complete maintenance */}
                                 <CheckCircle2 className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>Completar mantenimiento</TooltipContent>
+                            <TooltipContent>
+                              {m.completado ? "Mantenimiento ya completado" : "Completar mantenimiento"}
+                            </TooltipContent>
                           </Tooltip>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -5686,8 +5692,8 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <strong>Estado:</strong>
-                  <Badge className={`ml-2 ${getMaintenanceStatusColor(isOverdue(selectedMaintenance.proximaFecha) ? "Vencido" : isUpcoming(selectedMaintenance.proximaFecha) ? "Próximo" : "Programado")}`}>
-                    {isOverdue(selectedMaintenance.proximaFecha) ? "Vencido" : isUpcoming(selectedMaintenance.proximaFecha) ? "Próximo" : "Programado"}
+                  <Badge className={`ml-2 ${getMaintenanceStatusColor(selectedMaintenance.completado ? "Completado" : isOverdue(selectedMaintenance.proximaFecha) ? "Vencido" : isUpcoming(selectedMaintenance.proximaFecha) ? "Próximo" : "Programado")}`}>
+                    {selectedMaintenance.completado ? "Completado" : isOverdue(selectedMaintenance.proximaFecha) ? "Vencido" : isUpcoming(selectedMaintenance.proximaFecha) ? "Próximo" : "Programado"}
                   </Badge>
                 </div>
               </div>

@@ -54,6 +54,13 @@ export async function GET(request: NextRequest) {
             id: true,
             realizado_por: true,
             fecha_realizacion: true,
+            tecnico: {
+              select: {
+                id: true,
+                nombre: true,
+                email: true,
+              },
+            },
           },
         },
       },

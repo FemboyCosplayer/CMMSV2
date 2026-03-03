@@ -636,7 +636,7 @@ export default function DashboardPage() {
         setAuditLogs([])
         toast({
           title: "Sin datos",
-          description: "No se encontraron registros de auditoría en la base de datos.",
+          description: "No se encontraron registros de auditor��a en la base de datos.",
           variant: "destructive",
         })
       }
@@ -3525,7 +3525,7 @@ export default function DashboardPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos los roles</SelectItem>
-                  <SelectItem value="Técnico">Técnico</SelectItem>
+                  <SelectItem value="T��cnico">Técnico</SelectItem>
                   <SelectItem value="Supervisor">Supervisor</SelectItem>
                   <SelectItem value="Administrador">Administrador</SelectItem>
                 </SelectContent>

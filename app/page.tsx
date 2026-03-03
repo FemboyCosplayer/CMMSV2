@@ -872,9 +872,8 @@ export default function DashboardPage() {
       const currentUserWithPermissions: CurrentUser = {
         id: userId,
         nombre: storedName,
-        correo: userEmail,
+        email: userEmail,
         rol: storedRole,
-        especialidad: "",
         permissions: DEFAULT_PERMISSIONS_BY_ROLE[storedRole],
       }
       setCurrentUser(currentUserWithPermissions)
@@ -2451,7 +2450,7 @@ export default function DashboardPage() {
       errors.modelo = "El modelo es requerido"
     }
 
-    // Ubicación - Requerida
+    // Ubicaci��n - Requerida
     if (!equipmentForm.ubicacion || equipmentForm.ubicacion.trim() === "") {
       errors.ubicacion = "La ubicación es requerida"
     }
@@ -6189,12 +6188,21 @@ export default function DashboardPage() {
 
   return (
     <div className="flex min-h-screen w-full bg-background">
-      <AppSidebar
-        activeSection={activeSection}
-        onSectionChange={handleSectionChange}
+      {authChecked && (
+        <AppSidebar
+          activeSection={activeSection}
+          onSectionChange={handleSectionChange}
         userRole={currentUser?.rol || "administrador"}
-        hospitalLogo={hospitalLogo}
-      />
+          hospitalLogo={hospitalLogo}
+        />
+      )}
+      {!authChecked ? (
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-600">Cargando...</p>
+          </div>
+        </main>
+      ) : (
       <main className="flex-1 w-full">
         <AppHeader
           currentUser={currentUser}
@@ -6207,6 +6215,7 @@ export default function DashboardPage() {
         />
         <div className="p-6">{renderContent()}</div>
       </main>
+      )}
 
       {/* EQUIPMENT DELETE CONFIRMATION DIALOG */}
       <Dialog open={isDeleteEquipmentDialogOpen} onOpenChange={setIsDeleteEquipmentDialogOpen}>

@@ -357,7 +357,6 @@ export default function DashboardPage() {
     rol: "all",
     estado: "all",
   })
-  const [searchUser, setSearchUser] = useState("")
   const [showUserForm, setShowUserForm] = useState(false) // Renamed from showUserDialog
   const [showUserDetails, setShowUserDetails] = useState(false)
   const [showPermissionsDialog, setShowPermissionsDialog] = useState(false)
@@ -636,7 +635,7 @@ export default function DashboardPage() {
         setAuditLogs([])
         toast({
           title: "Sin datos",
-          description: "No se encontraron registros de auditor��a en la base de datos.",
+          description: "No se encontraron registros de auditoría en la base de datos.",
           variant: "destructive",
         })
       }
@@ -928,7 +927,6 @@ export default function DashboardPage() {
       const params = {
         rol: userFilters.rol !== "all" ? userFilters.rol : undefined,
         estado: userFilters.estado !== "all" ? userFilters.estado : undefined,
-        search: searchUser || undefined,
         page: usersPaginaActual, // Added pagination params
         perPage: usersPerPage,
       }
@@ -1000,7 +998,7 @@ export default function DashboardPage() {
     if (activeSection === "tecnicos") {
       loadUsers()
     }
-  }, [userFilters, searchUser]) // Removed duplicate and problematic useEffects that were causing infinite loops
+  }, [userFilters]) // Removed duplicate and problematic useEffects that were causing infinite loops
 
   // Reload work orders when filters change
   useEffect(() => {
@@ -3525,7 +3523,7 @@ export default function DashboardPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos los roles</SelectItem>
-                  <SelectItem value="T��cnico">Técnico</SelectItem>
+                  <SelectItem value="Técnico">Técnico</SelectItem>
                   <SelectItem value="Supervisor">Supervisor</SelectItem>
                   <SelectItem value="Administrador">Administrador</SelectItem>
                 </SelectContent>
@@ -3543,19 +3541,10 @@ export default function DashboardPage() {
                   <SelectItem value="Inactivo">Inactivo</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="sm" onClick={() => {
-                setUserFilters({ rol: "all", estado: "all" })
-                setSearchUser("")
-              }}>
+              <Button variant="outline" size="sm" onClick={() => setUserFilters({ rol: "all", estado: "all" })}>
                 <Search className="h-4 w-4 mr-2" />
                 Limpiar
               </Button>
-              <Input
-                placeholder="Buscar por nombre o correo..."
-                value={searchUser}
-                onChange={(e) => setSearchUser(e.target.value)}
-                className="w-48"
-              />
             </div>
 
             <div className="flex items-center justify-between mb-4">

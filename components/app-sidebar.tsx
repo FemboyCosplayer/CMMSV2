@@ -57,7 +57,13 @@ interface AppSidebarProps {
 export function AppSidebar({ activeSection, onSectionChange, userRole, hospitalLogo }: AppSidebarProps) {
   // Normalize role to lowercase to handle different input formats
   const normalizedRole = (userRole?.toLowerCase() as "administrador" | "supervisor" | "tecnico") || "administrador"
-  const menuItems = menuItemsByRole[normalizedRole] || menuItemsByRole.administrador
+  
+  // Ensure the normalized role is one of the valid roles
+  const validRoles: ("administrador" | "supervisor" | "tecnico")[] = ["administrador", "supervisor", "tecnico"]
+  const isValidRole = validRoles.includes(normalizedRole)
+  const finalRole = isValidRole ? normalizedRole : "administrador"
+  
+  const menuItems = menuItemsByRole[finalRole]
   const { toggleSidebar, state } = useSidebar()
 
   return (
@@ -86,7 +92,7 @@ export function AppSidebar({ activeSection, onSectionChange, userRole, hospitalL
         </div>
         <div className="group-data-[collapsible=icon]:hidden mt-3 pt-3 border-t">
           <div className="text-xs text-gray-600">Rol actual:</div>
-          <div className="text-sm font-semibold text-blue-600">{roleLabels[normalizedRole]}</div>
+          <div className="text-sm font-semibold text-blue-600">{roleLabels[finalRole]}</div>
         </div>
       </SidebarHeader>
 

@@ -6193,7 +6193,6 @@ export default function DashboardPage() {
         activeSection={activeSection}
         onSectionChange={handleSectionChange}
         userRole={currentUser?.rol || "administrador"}
-        currentUser={currentUser}
         hospitalLogo={hospitalLogo}
       />
       <main className="flex-1 w-full">

@@ -38,7 +38,7 @@ export const DEFAULT_PERMISSIONS_BY_ROLE: Record<RoleType, Record<PermissionKey,
     configuracionSistema: false,
   },
   tecnico: {
-    gestionEquipos: true,
+    gestionEquipos: false,
     gestionUsuarios: false,
     ordenesTrabajoCrear: false,
     ordenesTrabajoAsignar: false,

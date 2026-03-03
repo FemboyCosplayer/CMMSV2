@@ -32,6 +32,7 @@ const menuItemsByRole = {
     { title: "Órdenes de trabajo", icon: FileText, id: "ordenes" },
     { title: "Programar mantenimiento", icon: Settings, id: "mantenimiento" },
     { title: "Reportes", icon: BarChart3, id: "reportes" },
+    { title: "Configuración", icon: Cog, id: "configuracion" },
   ],
   tecnico: [
     { title: "Órdenes de trabajo", icon: FileText, id: "ordenes" },

@@ -459,7 +459,6 @@ export default function DashboardPage() {
   const [isLoadingOrders, setIsLoadingOrders] = useState(false) // CHANGE: Add loading state for orders
 
   const [selectedTechnicianId, setSelectedTechnicianId] = useState<number | null>(null)
-  const [statusObservaciones, setStatusObservaciones] = useState("")
   const [newStatus, setNewStatus] = useState("") // ADDED: State for new status in change status dialog
 
   // CHANGE: Updated report type to include cronograma
@@ -873,9 +872,8 @@ export default function DashboardPage() {
       const currentUserWithPermissions: CurrentUser = {
         id: userId,
         nombre: storedName,
-        correo: userEmail,
+        email: userEmail,
         rol: storedRole,
-        especialidad: "",
         permissions: DEFAULT_PERMISSIONS_BY_ROLE[storedRole],
       }
       setCurrentUser(currentUserWithPermissions)
@@ -1359,7 +1357,7 @@ export default function DashboardPage() {
 
   const handleChangeStatus = async () => {
     if (selectedOrder && newStatus) {
-      const result = await cambiarEstadoOrden(selectedOrder.id, newStatus, statusObservaciones || undefined)
+      const result = await cambiarEstadoOrden(selectedOrder.id, newStatus)
       if (result && result.success && result.data) {
         // Update the selected order with the new data
         setSelectedOrder(result.data)
@@ -1372,7 +1370,6 @@ export default function DashboardPage() {
         })
         setIsStatusDialogOpen(false)
         setNewStatus("")
-        setStatusObservaciones("")
       } else {
         toast({
           variant: "destructive",
@@ -1665,31 +1662,26 @@ export default function DashboardPage() {
                               <DropdownMenuItem onClick={() => {
                                 setSelectedOrder(order)
                                 setNewStatus('abierta')
-                                setStatusObservaciones('')
                                 setIsStatusDialogOpen(true)
                               }}>Abierta</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => {
                                 setSelectedOrder(order)
                                 setNewStatus('en_progreso')
-                                setStatusObservaciones('')
                                 setIsStatusDialogOpen(true)
                               }}>En Progreso</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => {
                                 setSelectedOrder(order)
                                 setNewStatus('completada')
-                                setStatusObservaciones('')
                                 setIsStatusDialogOpen(true)
                               }}>Completada</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => {
                                 setSelectedOrder(order)
                                 setNewStatus('pospuesta')
-                                setStatusObservaciones('')
                                 setIsStatusDialogOpen(true)
                               }}>Pospuesta</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => {
                                 setSelectedOrder(order)
                                 setNewStatus('cancelada')
-                                setStatusObservaciones('')
                                 setIsStatusDialogOpen(true)
                               }}>Cancelada</DropdownMenuItem>
                             </DropdownMenuContent>
@@ -2215,18 +2207,6 @@ export default function DashboardPage() {
                   <SelectItem value="pospuesta">Pospuesta</SelectItem>
                 </SelectContent>
               </Select>
-              <div className="space-y-2">
-                <label htmlFor="observaciones" className="text-sm font-medium">
-                  Observaciones (opcional)
-                </label>
-                <Textarea
-                  id="observaciones"
-                  placeholder="Agregar observaciones sobre el cambio de estado..."
-                  value={statusObservaciones}
-                  onChange={(e) => setStatusObservaciones(e.target.value)}
-                  rows={3}
-                />
-              </div>
             </div>
             <DialogFooter>
               <Button
@@ -2234,7 +2214,6 @@ export default function DashboardPage() {
                 onClick={() => {
                   setIsStatusDialogOpen(false)
                   setNewStatus("")
-                  setStatusObservaciones("")
                 }}
               >
                 Cancelar
@@ -2471,7 +2450,7 @@ export default function DashboardPage() {
       errors.modelo = "El modelo es requerido"
     }
 
-    // Ubicación - Requerida
+    // Ubicaci��n - Requerida
     if (!equipmentForm.ubicacion || equipmentForm.ubicacion.trim() === "") {
       errors.ubicacion = "La ubicación es requerida"
     }
@@ -3790,77 +3769,6 @@ export default function DashboardPage() {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-lg font-medium">Documentos Asociados</h3>
-                  <Button
-                    onClick={(e) => {
-                      console.error("[v0] === BUTTON CLICK DETECTED ===")
-                      e.preventDefault()
-                      e.stopPropagation()
-                      const input = document.getElementById("fileInput") as HTMLInputElement
-                      console.error("[v0] Input element found:", input ? "YES" : "NO")
-                      if (input) {
-                        console.error("[v0] Triggering click on input")
-                        input.click()
-                      }
-                    }}
-                    size="sm"
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Subir Archivo
-                  </Button>
-                  <input
-                    id="fileInput"
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.txt,.csv"
-                    onChange={(e) => {
-                      console.error("[v0] File input onChange triggered", e.target.files?.length)
-                      handleFileUpload(e)
-                    }}
-                    className="hidden"
-                  />
-                </div>
-                <div className="space-y-2">
-                  {(selectedEquipment.documentos || []).length > 0 ? (
-                    (selectedEquipment.documentos || []).map((doc, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-blue-600" />
-                          <span>{doc.nombre || "N/A"}</span>
-                          <Badge variant="outline">{doc.tipo || "N/A"}</Badge>
-                          {doc.fechaSubida && <span className="text-xs text-gray-500">({doc.fechaSubida})</span>}
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleViewDocument(doc)}
-                            title="Ver documento"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDownloadDocument(doc)}
-                            title="Descargar documento"
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-red-600 bg-transparent"
-                            onClick={() => doc.id && handleDeleteDocument(doc.id, index)}
-                            title="Eliminar documento"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-gray-500 text-sm">No hay documentos asociados.</p>
-                  )}
                 </div>
               </div>
 
@@ -4474,123 +4382,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Permissions Section */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-medium">Permisos</h3>
-                  {userRole === "administrador" && (
-                    <Button
-                      size="sm"
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                      onClick={() => {
-                        setEditingPermissions(selectedUser)
-                        if (selectedUser?.permissions && Object.keys(selectedUser.permissions).length > 0) {
-                          setUserPermissions({
-                            gestionEquipos: selectedUser.permissions.gestionEquipos ?? false,
-                            gestionUsuarios: selectedUser.permissions.gestionUsuarios ?? false,
-                            ordenesTrabajoCrear: selectedUser.permissions.ordenesTrabajoCrear ?? false,
-                            ordenesTrabajoAsignar: selectedUser.permissions.ordenesTrabajoAsignar ?? false,
-                            ordenesTrabajoEjecutar: selectedUser.permissions.ordenesTrabajoEjecutar ?? false,
-                            mantenimientoPreventivo: selectedUser.permissions.mantenimientoPreventivo ?? false,
-                            reportesGenerar: selectedUser.permissions.reportesGenerar ?? false,
-                            reportesVer: selectedUser.permissions.reportesVer ?? false,
-                            logsAcceso: selectedUser.permissions.logsAcceso ?? false,
-                            configuracionSistema: selectedUser.permissions.configuracionSistema ?? false,
-                          })
-                        } else {
-                          const roleKey = selectedUser?.rol?.toLowerCase() as RoleType | undefined
-                          if (roleKey && DEFAULT_PERMISSIONS_BY_ROLE[roleKey]) {
-                            setUserPermissions(DEFAULT_PERMISSIONS_BY_ROLE[roleKey])
-                          }
-                        }
-                        setShowPermissionsDialog(true)
-                      }}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Editar Permisos
-                    </Button>
-                  )}
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                  {(() => {
-                    const perms =
-                      selectedUser?.permissions && Object.keys(selectedUser.permissions).length > 0
-                        ? selectedUser.permissions
-                        : selectedUser?.rol
-                          ? DEFAULT_PERMISSIONS_BY_ROLE[selectedUser.rol.toLowerCase() as RoleType]
-                          : DEFAULT_PERMISSIONS_BY_ROLE.tecnico
 
-                    return (
-                      <>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm">Gestión de Equipos</span>
-                          <span
-                            className={`text-sm font-medium ${perms?.gestionEquipos ? "text-green-600" : "text-red-600"}`}
-                          >
-                            {perms?.gestionEquipos ? "Sí" : "No"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm">Gestión de Usuarios</span>
-                          <span
-                            className={`text-sm font-medium ${perms?.gestionUsuarios ? "text-green-600" : "text-red-600"}`}
-                          >
-                            {perms?.gestionUsuarios ? "Sí" : "No"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm">Crear Órdenes de Trabajo</span>
-                          <span
-                            className={`text-sm font-medium ${perms?.ordenesTrabajoCrear ? "text-green-600" : "text-red-600"}`}
-                          >
-                            {perms?.ordenesTrabajoCrear ? "Sí" : "No"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm">Asignar Órdenes de Trabajo</span>
-                          <span
-                            className={`text-sm font-medium ${perms?.ordenesTrabajoAsignar ? "text-green-600" : "text-red-600"}`}
-                          >
-                            {perms?.ordenesTrabajoAsignar ? "Sí" : "No"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm">Mantenimiento Preventivo</span>
-                          <span
-                            className={`text-sm font-medium ${perms?.mantenimientoPreventivo ? "text-green-600" : "text-red-600"}`}
-                          >
-                            {perms?.mantenimientoPreventivo ? "Sí" : "No"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm">Generar Reportes</span>
-                          <span
-                            className={`text-sm font-medium ${perms?.reportesGenerar ? "text-green-600" : "text-red-600"}`}
-                          >
-                            {perms?.reportesGenerar ? "Sí" : "No"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm">Acceso a Logs</span>
-                          <span
-                            className={`text-sm font-medium ${perms?.logsAcceso ? "text-green-600" : "text-red-600"}`}
-                          >
-                            {perms?.logsAcceso ? "Sí" : "No"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm">Configuración del Sistema</span>
-                          <span
-                            className={`text-sm font-medium ${perms?.configuracionSistema ? "text-green-600" : "text-red-600"}`}
-                          >
-                            {perms?.configuracionSistema ? "Sí" : "No"}
-                          </span>
-                        </div>
-                      </>
-                    )
-                  })()}
-                </div>
-              </div>
 
             </div>
             <div className="flex justify-end gap-2 mt-6">
@@ -4623,153 +4415,7 @@ export default function DashboardPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Permissions Dialog */}
-        <Dialog open={showPermissionsDialog} onOpenChange={setShowPermissionsDialog}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Editar Permisos - {editingPermissions?.nombre}</DialogTitle>
-              <p className="text-sm text-gray-600 mt-2">
-                Rol: <span className="font-medium">{editingPermissions?.rol}</span>
-              </p>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <Label className="text-sm font-medium">Gestión de Equipos</Label>
-                  <p className="text-xs text-gray-600">Ver, crear, editar y eliminar equipos</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={userPermissions.gestionEquipos}
-                  onChange={(e) => setUserPermissions({ ...userPermissions, gestionEquipos: e.target.checked })}
-                  className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-              </div>
 
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <Label className="text-sm font-medium">Gestión de Usuarios</Label>
-                  <p className="text-xs text-gray-600">Crear, editar y eliminar usuarios del sistema</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={userPermissions.gestionUsuarios}
-                  onChange={(e) => setUserPermissions({ ...userPermissions, gestionUsuarios: e.target.checked })}
-                  className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <Label className="text-sm font-medium">Crear Órdenes de Trabajo</Label>
-                  <p className="text-xs text-gray-600">Crear nuevas órdenes de trabajo</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={userPermissions.ordenesTrabajoCrear}
-                  onChange={(e) => setUserPermissions({ ...userPermissions, ordenesTrabajoCrear: e.target.checked })}
-                  className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <Label className="text-sm font-medium">Asignar Órdenes de Trabajo</Label>
-                  <p className="text-xs text-gray-600">Asignar órdenes a técnicos</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={userPermissions.ordenesTrabajoAsignar}
-                  onChange={(e) => setUserPermissions({ ...userPermissions, ordenesTrabajoAsignar: e.target.checked })}
-                  className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <Label className="text-sm font-medium">Mantenimiento Preventivo</Label>
-                  <p className="text-xs text-gray-600">Programar y ejecutar mantenimientos preventivos</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={userPermissions.mantenimientoPreventivo}
-                  onChange={(e) =>
-                    setUserPermissions({ ...userPermissions, mantenimientoPreventivo: e.target.checked })
-                  }
-                  className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <Label className="text-sm font-medium">Generar Reportes</Label>
-                  <p className="text-xs text-gray-600">Crear y exportar reportes del sistema</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={userPermissions.reportesGenerar}
-                  onChange={(e) => setUserPermissions({ ...userPermissions, reportesGenerar: e.target.checked })}
-                  className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <Label className="text-sm font-medium">Acceso a Logs</Label>
-                  <p className="text-xs text-gray-600">Ver registros de auditoría del sistema</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={userPermissions.logsAcceso}
-                  onChange={(e) => setUserPermissions({ ...userPermissions, logsAcceso: e.target.checked })}
-                  className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <Label className="text-sm font-medium">Configuración del Sistema</Label>
-                  <p className="text-xs text-gray-600">Modificar configuraciones globales</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={userPermissions.configuracionSistema}
-                  onChange={(e) => setUserPermissions({ ...userPermissions, configuracionSistema: e.target.checked })}
-                  className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 mt-6">
-              <Button variant="outline" onClick={() => setShowPermissionsDialog(false)}>
-                Cancelar
-              </Button>
-              <Button
-                onClick={async () => {
-                  if (!editingPermissions) return
-
-                  setUsersLoading(true)
-                  const result = await updatePermissions(editingPermissions.id, userPermissions)
-
-                  if (result.success) {
-                    await loadUsers()
-                    if (selectedUser?.id === editingPermissions.id) {
-                      setSelectedUser({ ...selectedUser, permissions: userPermissions })
-                    }
-                    setShowPermissionsDialog(false)
-                    alert("Permisos actualizados correctamente")
-                  } else {
-                    alert(result.error || "Error al actualizar permisos")
-                  }
-                  setUsersLoading(false)
-                }}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                disabled={usersLoading}
-              >
-                {usersLoading ? "Guardando..." : "Guardar Permisos"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
 
         {/* Reset Password Dialog */}
         <Dialog open={showResetPassword} onOpenChange={setShowResetPassword}>
@@ -5071,7 +4717,6 @@ export default function DashboardPage() {
       observaciones: maintenance.observaciones || maintenance.descripcion,
       descripcion: maintenance.descripcion,
       procedimiento: maintenance.procedimiento,
-      responsableId: maintenance.creado_por,
     })
     setShowMaintenanceForm(true)
     setMaintenanceFormErrors({})
@@ -5432,7 +5077,12 @@ export default function DashboardPage() {
                       </td>
                       <td className="px-4 py-2">
                         {(() => {
-                          const resultado = m.resultado || (isOverdue(m.proxima_programada) ? "vencido" : isUpcoming(m.proxima_programada) ? "próximo" : "pendiente")
+                          let resultado
+                          if (m.completado) {
+                            resultado = "completado"
+                          } else {
+                            resultado = m.resultado || (isOverdue(m.proxima_programada) ? "vencido" : isUpcoming(m.proxima_programada) ? "próximo" : "pendiente")
+                          }
                           const displayResultado = resultado.charAt(0).toUpperCase() + resultado.slice(1)
                           return <Badge className={`${getMaintenanceStatusColor(resultado)}`}>{displayResultado}</Badge>
                         })()}
@@ -5474,12 +5124,15 @@ export default function DashboardPage() {
                                 variant="outline"
                                 className="text-green-600 hover:text-green-700 bg-transparent"
                                 onClick={() => handleCompleteMaintenance(m)}
+                                disabled={m.completado}
                               >
                                 {/* CHANGE: Added green checkmark for complete maintenance */}
                                 <CheckCircle2 className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>Completar mantenimiento</TooltipContent>
+                            <TooltipContent>
+                              {m.completado ? "Mantenimiento ya completado" : "Completar mantenimiento"}
+                            </TooltipContent>
                           </Tooltip>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -5587,44 +5240,7 @@ export default function DashboardPage() {
                 <p className="text-red-500 text-xs">{maintenanceFormErrors.frecuencia}</p>
               )}
             </div>
-            <div className="md:col-span-2 space-y-2">
-              <Label htmlFor="tecnicoAsignado">Técnico Asignado</Label>
-              <Select
-                value={maintenanceForm.tecnicoAsignadoId?.toString() || ""}
-                onValueChange={(value) => {
-                  const selectedTech = users.find((u) => u.id.toString() === value)
-                  setMaintenanceForm({
-                    ...maintenanceForm,
-                    tecnicoAsignadoId: value ? Number.parseInt(value) : undefined,
-                    tecnicoAsignado: selectedTech?.nombre,
-                  })
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar técnico (opcional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">Sin asignar</SelectItem>
-                  {users
-                    .filter((u) => {
-                      const rolLower = u.rol?.toLowerCase() || ""
-                      const rolMatch =
-                        rolLower === "técnico" ||
-                        rolLower === "tecnico" ||
-                        rolLower === "supervisor" ||
-                        rolLower === "administrador"
-                      const estadoMatch = u.estado?.toLowerCase() === "activo"
-                      return rolMatch && estadoMatch
-                    })
-                    .map((tech) => (
-                      <SelectItem key={tech.id} value={tech.id.toString()}>
-                        {tech.nombre} ({tech.rol})
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {/* </CHANGE> */}
+
             <div className="space-y-2">
               <Label htmlFor="proximaFecha">Próxima Fecha *</Label>
               <Input
@@ -5722,8 +5338,8 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <strong>Estado:</strong>
-                  <Badge className={`ml-2 ${getMaintenanceStatusColor(isOverdue(selectedMaintenance.proximaFecha) ? "Vencido" : isUpcoming(selectedMaintenance.proximaFecha) ? "Próximo" : "Programado")}`}>
-                    {isOverdue(selectedMaintenance.proximaFecha) ? "Vencido" : isUpcoming(selectedMaintenance.proximaFecha) ? "Próximo" : "Programado"}
+                  <Badge className={`ml-2 ${getMaintenanceStatusColor(selectedMaintenance.completado ? "Completado" : isOverdue(selectedMaintenance.proximaFecha) ? "Vencido" : isUpcoming(selectedMaintenance.proximaFecha) ? "Próximo" : "Programado")}`}>
+                    {selectedMaintenance.completado ? "Completado" : isOverdue(selectedMaintenance.proximaFecha) ? "Vencido" : isUpcoming(selectedMaintenance.proximaFecha) ? "Próximo" : "Programado"}
                   </Badge>
                 </div>
               </div>
@@ -6572,13 +6188,21 @@ export default function DashboardPage() {
 
   return (
     <div className="flex min-h-screen w-full bg-background">
-      <AppSidebar
-        activeSection={activeSection}
-        onSectionChange={handleSectionChange}
-        userRole={currentUser?.rol || "administrador"}
-        currentUser={currentUser}
-        hospitalLogo={hospitalLogo}
-      />
+      {authChecked && (
+        <AppSidebar
+          activeSection={activeSection}
+          onSectionChange={handleSectionChange}
+          userRole={userRole}
+          hospitalLogo={hospitalLogo}
+        />
+      )}
+      {!authChecked ? (
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-600">Cargando...</p>
+          </div>
+        </main>
+      ) : (
       <main className="flex-1 w-full">
         <AppHeader
           currentUser={currentUser}
@@ -6591,6 +6215,7 @@ export default function DashboardPage() {
         />
         <div className="p-6">{renderContent()}</div>
       </main>
+      )}
 
       {/* EQUIPMENT DELETE CONFIRMATION DIALOG */}
       <Dialog open={isDeleteEquipmentDialogOpen} onOpenChange={setIsDeleteEquipmentDialogOpen}>

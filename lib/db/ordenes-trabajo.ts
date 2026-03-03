@@ -22,6 +22,7 @@ function transformFromDB(record: any): OrdenTrabajo {
     costoTotal: record.costo_real ? Number(record.costo_real) : undefined,
     createdAt: record.created_at?.toISOString(),
     updatedAt: record.updated_at?.toISOString(),
+    observaciones: record.notas || '',
   }
 }
 
@@ -223,15 +224,23 @@ export async function asignarTecnicoDB(ordenId: number, tecnicoId: number): Prom
 export async function cambiarEstadoDB(
   ordenId: number,
   nuevoEstado: string,
+  observaciones?: string,
 ): Promise<OrdenTrabajo> {
-  console.log('[v0] cambiarEstadoDB - Changing estado of orden', ordenId, 'to', nuevoEstado)
+  console.log('[v0] cambiarEstadoDB - Changing estado of orden', ordenId, 'to', nuevoEstado, 'observaciones:', observaciones)
 
   try {
+    const updateData: any = {
+      estado: nuevoEstado,
+    }
+
+    // If observaciones are provided, update the notas field
+    if (observaciones) {
+      updateData.notas = observaciones
+    }
+
     const orden = await prisma.ordenTrabajo.update({
       where: { id: ordenId },
-      data: {
-        estado: nuevoEstado,
-      },
+      data: updateData,
       include: {
         equipo: true,
         tecnico: true,

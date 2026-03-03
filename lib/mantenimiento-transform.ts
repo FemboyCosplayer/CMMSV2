@@ -19,9 +19,18 @@ export type Mantenimiento = {
   updated_at?: string
   creado_por?: number
   programada_orden_generada?: boolean
+  realizaciones?: any[]
+  ultimaRealizacion?: any
+  completado?: boolean
+  responsableNombre?: string
 }
 
 export function transformMantenimientoToUI(data: any): Mantenimiento {
+  // Get the latest realization if any
+  const ultimaRealizacion = data.realizaciones && data.realizaciones.length > 0 
+    ? data.realizaciones[data.realizaciones.length - 1]
+    : null
+
   return {
     id: data.id,
     equipoId: data.equipo_id,
@@ -42,5 +51,9 @@ export function transformMantenimientoToUI(data: any): Mantenimiento {
     updated_at: data.updated_at,
     creado_por: data.creado_por,
     programada_orden_generada: data.programada_orden_generada,
+    realizaciones: data.realizaciones || [],
+    ultimaRealizacion: ultimaRealizacion,
+    completado: !!ultimaRealizacion,
+    responsableNombre: ultimaRealizacion?.tecnico?.nombre || 'Sin asignar',
   }
 }

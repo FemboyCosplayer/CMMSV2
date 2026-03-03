@@ -45,6 +45,12 @@ export async function getAllMantenimientos(params?: {
         where,
         include: {
           equipo: true,
+          realizaciones: {
+            include: {
+              tecnico: true,
+            },
+            orderBy: { fecha_realizacion: 'desc' },
+          },
         },
         skip,
         take: perPage,
@@ -69,6 +75,12 @@ export async function getMantenimientoById(id: number) {
       where: { id },
       include: {
         equipo: true,
+        realizaciones: {
+          include: {
+            tecnico: true,
+          },
+          orderBy: { fecha_realizacion: 'desc' },
+        },
       }
     })
     
@@ -183,7 +195,10 @@ export async function updateMantenimiento(id: number, mantenimiento: any) {
     }
 
     const frecuenciaDias = frecuenciaToDias(mantenimiento.frecuencia || currentMantenimiento.frecuencia)
-    const descripcion = mantenimiento.descripcion || mantenimiento.observaciones || currentMantenimiento.descripcion
+    // Mapear observaciones a descripcion si está disponible
+    const descripcion = mantenimiento.observaciones !== undefined 
+      ? mantenimiento.observaciones 
+      : (mantenimiento.descripcion || currentMantenimiento.descripcion)
     
     // Get the next maintenance date to validate
     let proximaProgramada: Date | null = null
@@ -215,7 +230,10 @@ export async function updateMantenimiento(id: number, mantenimiento: any) {
     }
 
     if (mantenimiento.tipo) updateData.tipo = mantenimiento.tipo?.toLowerCase()
-    if (descripcion) updateData.descripcion = descripcion
+    // Siempre actualizar descripcion si viene en observaciones o descripcion
+    if (mantenimiento.observaciones !== undefined || mantenimiento.descripcion !== undefined) {
+      updateData.descripcion = descripcion
+    }
     if (mantenimiento.procedimiento !== undefined) updateData.procedimiento = mantenimiento.procedimiento
     if (mantenimiento.frecuencia) {
       updateData.frecuencia = mantenimiento.frecuencia?.toLowerCase()

@@ -405,6 +405,7 @@ export default function DashboardPage() {
   })
   const [userRole, setUserRole] = useState<RoleType>("administrador") // Changed to RoleType
 
+  const [userSearchTerm, setUserSearchTerm] = useState("")
   const [usersPaginaActual, setUsersPaginaActual] = useState(1)
   const [usersPerPage, setUsersPerPage] = useState(10)
   const [usersTotalPages, setUsersTotalPages] = useState(1) // Initialize with 1
@@ -1118,7 +1119,7 @@ export default function DashboardPage() {
     if (activeSection === "tecnicos") {
       loadUsers()
     }
-  }, [activeSection, usersPaginaActual, usersPerPage])
+  }, [activeSection, usersPaginaActual, usersPerPage, userFilters, userSearchTerm])
 
   const loadUsers = async () => {
     setUsersLoading(true)
@@ -1126,6 +1127,7 @@ export default function DashboardPage() {
       const params = {
         rol: userFilters.rol !== "all" ? userFilters.rol : undefined,
         estado: userFilters.estado !== "all" ? userFilters.estado : undefined,
+        search: userSearchTerm || undefined,
         page: usersPaginaActual, // Added pagination params
         perPage: usersPerPage,
       }
@@ -3815,11 +3817,15 @@ export default function DashboardPage() {
   )
 
   const renderUsuarios = () => {
-    // Apply filters first
+    // Apply filters first (including client-side search as fallback)
     const filteredUsers = users.filter((user) => {
       const matchRol = userFilters.rol === "all" || user.rol === userFilters.rol
       const matchEstado = userFilters.estado === "all" || user.estado === userFilters.estado
-      return matchRol && matchEstado
+      const matchSearch = !userSearchTerm || 
+        user.nombre?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+        user.email?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+        user.rol?.toLowerCase().includes(userSearchTerm.toLowerCase())
+      return matchRol && matchEstado && matchSearch
     })
 
     // Calculate pagination values
@@ -3882,8 +3888,8 @@ export default function DashboardPage() {
                   <SelectItem value="Inactivo">Inactivo</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="sm" onClick={() => setUserFilters({ rol: "all", estado: "all" })}>
-                <Search className="h-4 w-4 mr-2" />
+              <Button variant="outline" size="sm" onClick={() => { setUserFilters({ rol: "all", estado: "all" }); setUserSearchTerm(""); setUsersPaginaActual(1); }}>
+                <X className="h-4 w-4 mr-2" />
                 Limpiar
               </Button>
             </div>
@@ -3909,6 +3915,19 @@ export default function DashboardPage() {
                   </SelectContent>
                 </Select>
                 <span className="text-sm text-gray-600">registros</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Search className="h-4 w-4 text-gray-500" />
+                <span className="text-sm text-gray-600">Buscar:</span>
+                <Input
+                  className="w-56"
+                  placeholder="Nombre, correo..."
+                  value={userSearchTerm}
+                  onChange={(e) => {
+                    setUserSearchTerm(e.target.value)
+                    setUsersPaginaActual(1)
+                  }}
+                />
               </div>
             </div>
 

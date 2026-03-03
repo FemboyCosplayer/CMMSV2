@@ -3556,6 +3556,7 @@ export default function DashboardPage() {
                 onChange={(e) => setSearchUser(e.target.value)}
                 className="w-48"
               />
+            </div>
 
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-4">

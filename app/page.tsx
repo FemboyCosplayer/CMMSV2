@@ -425,7 +425,6 @@ export default function DashboardPage() {
     tipo: "all",
     frecuencia: "all",
   })
-  const [searchMaintenance, setSearchMaintenance] = useState("")
   const [calendarView, setCalendarView] = useState(false) // State to toggle between list and calendar view
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false)
@@ -698,47 +697,6 @@ export default function DashboardPage() {
     }
   }, [orderCurrentPage, orderPerPage, searchOrder, orderFilters])
 
-  // Define loadMaintenances for loading scheduled maintenances with search
-  const loadMaintenances = useCallback(async () => {
-    console.log("[v0] loadMaintenances - Starting with filters:", { searchMaintenance, maintenanceFilters })
-    setMaintenanceLoading(true)
-    
-    try {
-      const params = {
-        tipo: maintenanceFilters.tipo !== "all" ? maintenanceFilters.tipo : undefined,
-        frecuencia: maintenanceFilters.frecuencia !== "all" ? maintenanceFilters.frecuencia : undefined,
-        search: searchMaintenance || undefined,
-      }
-
-      // Use deduplicated request to avoid concurrent calls
-      const cacheKey = `mantenimientos_${JSON.stringify(params)}`
-      console.log("[v0] loadMaintenances - Cache key:", cacheKey)
-      
-      const response = await deduplicateRequest(
-        cacheKey,
-        () => fetchMantenimientos(params),
-        3 * 60 * 1000 // 3 minute cache
-      )
-
-      console.log("[v0] loadMaintenances - API Response:", response)
-      
-      // Ensure response has the correct structure
-      if (!response || !response.data) {
-        console.error("[v0] loadMaintenances - Invalid response structure:", response)
-        setMaintenanceSchedules([])
-        return
-      }
-      
-      setMaintenanceSchedules(response.data)
-      console.log("[v0] loadMaintenances - Successfully loaded", response.data?.length ?? 0, "items")
-    } catch (error) {
-      console.error("[v0] loadMaintenances - Error:", error)
-      setMaintenanceSchedules([])
-    } finally {
-      setMaintenanceLoading(false)
-    }
-  }, [searchMaintenance, maintenanceFilters])
-
   // Initial load of equipment data when the component mounts.
   useEffect(() => {
     console.log("[v0] Component mounted - loading initial data")
@@ -758,14 +716,6 @@ export default function DashboardPage() {
     console.log("[v0] Component mounted - loading initial work orders")
     loadWorkOrders()
   }, [loadWorkOrders])
-
-  // Load maintenances when the 'mantenimiento' section becomes active
-  useEffect(() => {
-    if (activeSection === "mantenimiento") {
-      console.log("[v0] Section changed to mantenimiento - loading data")
-      loadMaintenances()
-    }
-  }, [activeSection, loadMaintenances])
 
   const checkAndCreateWorkOrdersForMaintenance = async (mantenimientos: Mantenimiento[]) => {
     const today = new Date()
@@ -1507,11 +1457,14 @@ export default function DashboardPage() {
     )
   }
 
+  const filteredOrders = workOrders
+
   const renderOrdenes = () => {
-    // Use orderTotalPages which comes from the backend pagination response
-    const totalPages = orderTotalPages
-    // Data is already paginated by the backend
-    const paginatedOrders = workOrders
+    const totalRecords = filteredOrders.length
+    const totalPages = Math.ceil(totalRecords / orderPerPage)
+    const startIndex = (orderCurrentPage - 1) * orderPerPage
+    const endIndex = Math.min(startIndex + orderPerPage, totalRecords)
+    const paginatedOrders = filteredOrders.slice(startIndex, endIndex)
 
     // Moved useEffect for pagination logic to the top level
     // useEffect(() => {
@@ -2356,152 +2309,6 @@ export default function DashboardPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
-    )
-  }
-
-  const renderMantenimiento = () => {
-    return (
-      <div className="flex flex-col gap-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Mantenimientos Programados</h1>
-        </div>
-
-        <Card>
-          <CardContent className="p-6">
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-4 mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-900">Filtros:</span>
-              </div>
-              <Select
-                value={maintenanceFilters.tipo}
-                onValueChange={(value) => setMaintenanceFilters({ ...maintenanceFilters, tipo: value })}
-              >
-                <SelectTrigger className="w-36 min-w-32">
-                  <SelectValue placeholder="Tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los tipos</SelectItem>
-                  <SelectItem value="preventivo">Preventivo</SelectItem>
-                  <SelectItem value="correctivo">Correctivo</SelectItem>
-                  <SelectItem value="inspección">Inspección</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select
-                value={maintenanceFilters.frecuencia}
-                onValueChange={(value) => setMaintenanceFilters({ ...maintenanceFilters, frecuencia: value })}
-              >
-                <SelectTrigger className="w-40 min-w-36">
-                  <SelectValue placeholder="Frecuencia" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas las frecuencias</SelectItem>
-                  <SelectItem value="semanal">Semanal</SelectItem>
-                  <SelectItem value="mensual">Mensual</SelectItem>
-                  <SelectItem value="trimestral">Trimestral</SelectItem>
-                  <SelectItem value="semestral">Semestral</SelectItem>
-                  <SelectItem value="anual">Anual</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="flex items-center gap-2 flex-1 max-w-xs">
-                <Search className="h-4 w-4 text-gray-500" />
-                <Input
-                  placeholder="Buscar mantenimiento..."
-                  value={searchMaintenance}
-                  onChange={(e) => {
-                    setSearchMaintenance(e.target.value)
-                  }}
-                  className="bg-white"
-                />
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setMaintenanceFilters({ tipo: "all", frecuencia: "all" })
-                  setSearchMaintenance("")
-                }}
-              >
-                Limpiar
-              </Button>
-            </div>
-
-            {/* Table */}
-            <div className="overflow-x-auto border rounded-lg">
-              <table className="w-full">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      ID Mantenimiento
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Nombre Equipo
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Tipo
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Frecuencia
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Próxima Fecha
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Resultado
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Observaciones
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {maintenanceLoading ? (
-                    <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                        Cargando mantenimientos...
-                      </td>
-                    </tr>
-                  ) : maintenanceSchedules.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                        No se encontraron mantenimientos programados
-                      </td>
-                    </tr>
-                  ) : (
-                    maintenanceSchedules.map((maint) => (
-                      <tr key={maint.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 font-medium text-gray-600 font-mono">{maint.id}</td>
-                        <td className="px-4 py-3">{maint.equipoNombre}</td>
-                        <td className="px-4 py-3 capitalize">{maint.tipo}</td>
-                        <td className="px-4 py-3 capitalize">{maint.frecuencia}</td>
-                        <td className="px-4 py-3">{formatDate(maint.proximaFecha)}</td>
-                        <td className="px-4 py-3">
-                          <Badge
-                            className={`rounded-md px-2 py-1 ${
-                              maint.resultado === "pendiente"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : maint.resultado === "completado"
-                                  ? "bg-green-100 text-green-800"
-                                  : maint.resultado === "vencido"
-                                    ? "bg-red-100 text-red-800"
-                                    : "bg-gray-100 text-gray-800"
-                            }`}
-                          >
-                            {maint.resultado?.charAt(0).toUpperCase() + maint.resultado?.slice(1) || "N/A"}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{maint.observaciones || "-"}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     )
   }

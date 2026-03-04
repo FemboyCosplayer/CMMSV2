@@ -425,6 +425,7 @@ export default function DashboardPage() {
     tipo: "all",
     frecuencia: "all",
   })
+  const [maintenanceSearchTerm, setMaintenanceSearchTerm] = useState("")
   const [calendarView, setCalendarView] = useState(false) // State to toggle between list and calendar view
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false)
@@ -4605,6 +4606,31 @@ export default function DashboardPage() {
     }
   }
 
+  // Filtered maintenance list with search and filters
+  const getFilteredMaintenance = useMemo(() => {
+    // First, filter by the selected filters
+    const filtered = maintenanceSchedules.filter((m) => {
+      const matchesTipo = maintenanceFilters.tipo === "all" || m.tipo === maintenanceFilters.tipo
+      const matchesFrecuencia = maintenanceFilters.frecuencia === "all" || m.frecuencia === maintenanceFilters.frecuencia
+      return matchesTipo && matchesFrecuencia
+    })
+
+    // Then, apply search term
+    const searched = maintenanceSearchTerm
+      ? filtered.filter(
+          (m) =>
+            (typeof m.equipo === 'object' ? m.equipo?.nombre : m.equipo || "")
+              .toLowerCase()
+              .includes(maintenanceSearchTerm.toLowerCase()) ||
+            (m.tipo || "").toLowerCase().includes(maintenanceSearchTerm.toLowerCase()) ||
+            (m.frecuencia || "").toLowerCase().includes(maintenanceSearchTerm.toLowerCase()) ||
+            (m.observaciones || "").toLowerCase().includes(maintenanceSearchTerm.toLowerCase()),
+        )
+      : filtered
+
+    return searched
+  }, [maintenanceSchedules, maintenanceFilters, maintenanceSearchTerm])
+
   // Helper functions for calendar view
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
@@ -5063,6 +5089,20 @@ export default function DashboardPage() {
               </Button>
             </div>
           </div>
+
+          {/* Search and Controls */}
+          <div className="flex items-center justify-end mb-6">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Buscar:</span>
+              <Input
+                className="w-48"
+                placeholder="Equipo, tipo, frecuencia..."
+                value={maintenanceSearchTerm}
+                onChange={(e) => setMaintenanceSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+
           {maintenanceLoading ? (
             <div className="text-center py-8">
               <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2 text-blue-600" />
@@ -5086,7 +5126,7 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white">
-                  {maintenanceSchedules.map((m: any) => (
+                  {getFilteredMaintenance.map((m: any) => (
                     <tr key={m.id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="px-4 py-2 text-sm text-gray-600 font-mono">{m.id}</td>
                       <td className="px-4 py-2 font-medium">{typeof m.equipo === 'object' ? m.equipo?.nombre : m.equipo || "N/A"}</td>

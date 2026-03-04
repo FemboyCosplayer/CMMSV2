@@ -1567,9 +1567,11 @@ export default function DashboardPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
+                onClick={() => {
                   setOrderFilters({ estado: "all", prioridad: "all", tipo: "all", fechaDesde: "", fechaHasta: "" })
-                }
+                  setSearchOrder("")
+                  setOrderCurrentPage(1)
+                }}
               >
                 Limpiar
               </Button>
@@ -1597,7 +1599,10 @@ export default function DashboardPage() {
                   className="w-64"
                   placeholder="Buscar órdenes..."
                   value={searchOrder}
-                  onChange={(e) => setSearchOrder(e.target.value)}
+                  onChange={(e) => {
+                    setSearchOrder(e.target.value)
+                    setOrderCurrentPage(1)
+                  }}
                 />
               </div>
             </div>

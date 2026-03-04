@@ -1457,14 +1457,11 @@ export default function DashboardPage() {
     )
   }
 
-  const filteredOrders = workOrders
-
   const renderOrdenes = () => {
-    const totalRecords = filteredOrders.length
-    const totalPages = Math.ceil(totalRecords / orderPerPage)
-    const startIndex = (orderCurrentPage - 1) * orderPerPage
-    const endIndex = Math.min(startIndex + orderPerPage, totalRecords)
-    const paginatedOrders = filteredOrders.slice(startIndex, endIndex)
+    // Use orderTotalPages which comes from the backend pagination response
+    const totalPages = orderTotalPages
+    // Data is already paginated by the backend
+    const paginatedOrders = workOrders
 
     // Moved useEffect for pagination logic to the top level
     // useEffect(() => {

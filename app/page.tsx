@@ -6193,6 +6193,281 @@ export default function DashboardPage() {
       )
     }
 
+    // Render Órdenes de Trabajo with search functionality
+    const renderOrdenes = () => {
+      // Re-load work orders when component renders with this function (e.g., when section changes)
+      React.useEffect(() => {
+        if (activeSection === "ordenes") {
+          console.log("[v0] renderOrdenes - Section active, calling loadWorkOrders")
+          loadWorkOrders()
+        }
+      }, [activeSection, loadWorkOrders])
+
+      // Re-load work orders when search changes
+      React.useEffect(() => {
+        if (activeSection === "ordenes" && searchOrder !== undefined) {
+          console.log("[v0] renderOrdenes - Search changed to:", searchOrder)
+          loadWorkOrders()
+        }
+      }, [searchOrder, activeSection, loadWorkOrders])
+
+      const formatDate = (dateString: string | undefined) => {
+        if (!dateString) return "N/A"
+        try {
+          const date = new Date(dateString)
+          return date.toLocaleDateString("es-ES", { year: "numeric", month: "2-digit", day: "2-digit" })
+        } catch {
+          return dateString
+        }
+      }
+
+      return (
+        <div className="flex flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold">Órdenes de Trabajo</h1>
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="h-4 w-4 mr-2" />
+              Nueva Orden
+            </Button>
+          </div>
+
+          <Card>
+            <CardContent className="p-6">
+              {/* Search and Filters */}
+              <div className="flex flex-wrap items-center gap-4 mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-900">Filtros:</span>
+                </div>
+                
+                <div className="flex items-center gap-2 flex-1">
+                  <Search className="h-4 w-4 text-gray-500" />
+                  <Input
+                    placeholder="Buscar orden..."
+                    value={searchOrder}
+                    onChange={(e) => setSearchOrder(e.target.value)}
+                    className="bg-white"
+                  />
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSearchOrder("")
+                  }}
+                >
+                  Limpiar
+                </Button>
+              </div>
+
+              {/* Table */}
+              <div className="overflow-x-auto border rounded-lg">
+                <table className="w-full">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Orden</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Equipo</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Estado</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Técnico</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Fecha</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {isLoadingOrders ? (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                          Cargando órdenes de trabajo...
+                        </td>
+                      </tr>
+                    ) : workOrders.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                          No hay órdenes de trabajo disponibles
+                        </td>
+                      </tr>
+                    ) : (
+                      workOrders.map((order) => (
+                        <tr key={order.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 font-medium text-gray-600">{order.numeroOrden || `#${order.id}`}</td>
+                          <td className="px-4 py-3">{order.equipoNombre || "N/A"}</td>
+                          <td className="px-4 py-3">
+                            <Badge className={`rounded-md px-2 py-1 ${
+                              order.estado === "abierta" ? "bg-blue-100 text-blue-800" :
+                              order.estado === "en_proceso" ? "bg-yellow-100 text-yellow-800" :
+                              order.estado === "cerrada" ? "bg-green-100 text-green-800" :
+                              "bg-gray-100 text-gray-800"
+                            }`}>
+                              {order.estado?.charAt(0).toUpperCase() + order.estado?.slice(1) || "N/A"}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3">{order.tecnicoAsignadoNombre || "-"}</td>
+                          <td className="px-4 py-3">{formatDate(order.fechaCreacion)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {orderTotalPages > 1 && (
+                <div className="flex items-center justify-between mt-6 p-4 border-t">
+                  <div className="text-sm text-gray-600">
+                    Página {orderCurrentPage} de {orderTotalPages}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setOrderCurrentPage(Math.max(1, orderCurrentPage - 1))}
+                      disabled={orderCurrentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setOrderCurrentPage(Math.min(orderTotalPages, orderCurrentPage + 1))}
+                      disabled={orderCurrentPage === orderTotalPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )
+    }
+
+    // Render Gestión de Equipos with search functionality
+    const renderGestionEquipos = () => {
+      return (
+        <div className="flex flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold">Gestión de Equipos</h1>
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="h-4 w-4 mr-2" />
+              Nuevo Equipo
+            </Button>
+          </div>
+
+          <Card>
+            <CardContent className="p-6">
+              {/* Search and Filters */}
+              <div className="flex flex-wrap items-center gap-4 mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-900">Filtros:</span>
+                </div>
+                
+                <div className="flex items-center gap-2 flex-1">
+                  <Search className="h-4 w-4 text-gray-500" />
+                  <Input
+                    placeholder="Buscar equipo..."
+                    className="bg-white"
+                  />
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                >
+                  Limpiar
+                </Button>
+              </div>
+
+              {/* Table */}
+              <div className="overflow-x-auto border rounded-lg">
+                <table className="w-full">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Nombre</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Modelo</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Ubicación</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    <tr>
+                      <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                        No hay equipos disponibles
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    }
+
+    // Render Gestión de Usuarios with search functionality
+    const renderUsuarios = () => {
+      return (
+        <div className="flex flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold">Gestión de Usuarios</h1>
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="h-4 w-4 mr-2" />
+              Nuevo Usuario
+            </Button>
+          </div>
+
+          <Card>
+            <CardContent className="p-6">
+              {/* Search and Filters */}
+              <div className="flex flex-wrap items-center gap-4 mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-900">Filtros:</span>
+                </div>
+                
+                <div className="flex items-center gap-2 flex-1">
+                  <Search className="h-4 w-4 text-gray-500" />
+                  <Input
+                    placeholder="Buscar usuario..."
+                    className="bg-white"
+                  />
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                >
+                  Limpiar
+                </Button>
+              </div>
+
+              {/* Table */}
+              <div className="overflow-x-auto border rounded-lg">
+                <table className="w-full">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Nombre</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Email</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Rol</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    <tr>
+                      <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                        No hay usuarios disponibles
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    }
+
     // ... existing rendering logic for other sections ...
     switch (activeSection) {
       case "dashboard":

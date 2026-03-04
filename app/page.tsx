@@ -1457,7 +1457,50 @@ export default function DashboardPage() {
     )
   }
 
-  const filteredOrders = workOrders
+  const filteredOrders = workOrders.filter((order) => {
+    // Apply search filter
+    if (searchOrder.trim()) {
+      const searchLower = searchOrder.toLowerCase()
+      const matchesSearch =
+        order.numeroOrden?.toLowerCase().includes(searchLower) ||
+        order.descripcion?.toLowerCase().includes(searchLower) ||
+        order.equipoNombre?.toLowerCase().includes(searchLower) ||
+        order.tecnicoAsignadoNombre?.toLowerCase().includes(searchLower)
+      
+      if (!matchesSearch) return false
+    }
+
+    // Apply estado filter
+    if (orderFilters.estado !== "all" && order.estado !== orderFilters.estado) {
+      return false
+    }
+
+    // Apply prioridad filter
+    if (orderFilters.prioridad !== "all" && order.prioridad !== orderFilters.prioridad) {
+      return false
+    }
+
+    // Apply tipo filter
+    if (orderFilters.tipo !== "all" && order.tipo !== orderFilters.tipo) {
+      return false
+    }
+
+    // Apply fecha desde filter
+    if (orderFilters.fechaDesde) {
+      const orderDate = new Date(order.fechaCreacion)
+      const filterDate = new Date(orderFilters.fechaDesde)
+      if (orderDate < filterDate) return false
+    }
+
+    // Apply fecha hasta filter
+    if (orderFilters.fechaHasta) {
+      const orderDate = new Date(order.fechaCreacion)
+      const filterDate = new Date(orderFilters.fechaHasta)
+      if (orderDate > filterDate) return false
+    }
+
+    return true
+  })
 
   const renderOrdenes = () => {
     const totalRecords = filteredOrders.length

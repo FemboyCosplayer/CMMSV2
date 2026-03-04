@@ -717,6 +717,32 @@ export default function DashboardPage() {
     loadWorkOrders()
   }, [loadWorkOrders])
 
+  // Re-load work orders when the 'ordenes' section becomes active.
+  useEffect(() => {
+    if (activeSection === "ordenes") {
+      console.log("[v0] Section changed to ordenes - loading data")
+      loadWorkOrders()
+    }
+  }, [activeSection, loadWorkOrders])
+
+  // Re-load work orders when search term changes
+  useEffect(() => {
+    if (activeSection === "ordenes" && searchOrder !== undefined) {
+      console.log("[v0] Search changed to:", searchOrder)
+      setOrderCurrentPage(1) // Reset to first page when searching
+      loadWorkOrders()
+    }
+  }, [searchOrder, activeSection, loadWorkOrders])
+
+  // Re-load work orders when filters change
+  useEffect(() => {
+    if (activeSection === "ordenes") {
+      console.log("[v0] Filters changed, reloading orders")
+      setOrderCurrentPage(1) // Reset to first page when filtering
+      loadWorkOrders()
+    }
+  }, [orderFilters, activeSection, loadWorkOrders])
+
   const checkAndCreateWorkOrdersForMaintenance = async (mantenimientos: Mantenimiento[]) => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
@@ -6195,22 +6221,6 @@ export default function DashboardPage() {
 
     // Render Órdenes de Trabajo with search functionality
     const renderOrdenes = () => {
-      // Re-load work orders when component renders with this function (e.g., when section changes)
-      React.useEffect(() => {
-        if (activeSection === "ordenes") {
-          console.log("[v0] renderOrdenes - Section active, calling loadWorkOrders")
-          loadWorkOrders()
-        }
-      }, [activeSection, loadWorkOrders])
-
-      // Re-load work orders when search changes
-      React.useEffect(() => {
-        if (activeSection === "ordenes" && searchOrder !== undefined) {
-          console.log("[v0] renderOrdenes - Search changed to:", searchOrder)
-          loadWorkOrders()
-        }
-      }, [searchOrder, activeSection, loadWorkOrders])
-
       const formatDate = (dateString: string | undefined) => {
         if (!dateString) return "N/A"
         try {
@@ -6234,13 +6244,57 @@ export default function DashboardPage() {
           <Card>
             <CardContent className="p-6">
               {/* Search and Filters */}
-              <div className="flex flex-wrap items-center gap-4 mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+              <div className="flex flex-wrap items-center gap-3 mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
                 <div className="flex items-center gap-2">
                   <Filter className="h-4 w-4 text-blue-600" />
                   <span className="text-sm font-medium text-blue-900">Filtros:</span>
                 </div>
+
+                <Select
+                  value={orderFilters.estado}
+                  onValueChange={(value) => setOrderFilters({ ...orderFilters, estado: value })}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="Estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los estados</SelectItem>
+                    <SelectItem value="abierta">Abierta</SelectItem>
+                    <SelectItem value="en_proceso">En Proceso</SelectItem>
+                    <SelectItem value="cerrada">Cerrada</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select
+                  value={orderFilters.prioridad}
+                  onValueChange={(value) => setOrderFilters({ ...orderFilters, prioridad: value })}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="Prioridad" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas las prioridades</SelectItem>
+                    <SelectItem value="baja">Baja</SelectItem>
+                    <SelectItem value="media">Media</SelectItem>
+                    <SelectItem value="alta">Alta</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select
+                  value={orderFilters.tipo}
+                  onValueChange={(value) => setOrderFilters({ ...orderFilters, tipo: value })}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="Tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los tipos</SelectItem>
+                    <SelectItem value="Preventivo">Preventivo</SelectItem>
+                    <SelectItem value="Correctivo">Correctivo</SelectItem>
+                  </SelectContent>
+                </Select>
                 
-                <div className="flex items-center gap-2 flex-1">
+                <div className="flex items-center gap-2 flex-1 max-w-xs">
                   <Search className="h-4 w-4 text-gray-500" />
                   <Input
                     placeholder="Buscar orden..."
@@ -6255,6 +6309,13 @@ export default function DashboardPage() {
                   size="sm"
                   onClick={() => {
                     setSearchOrder("")
+                    setOrderFilters({
+                      estado: "all",
+                      prioridad: "all",
+                      tipo: "all",
+                      fechaDesde: "",
+                      fechaHasta: "",
+                    })
                   }}
                 >
                   Limpiar

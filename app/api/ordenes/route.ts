@@ -14,7 +14,6 @@ export async function GET(request: NextRequest) {
     const prioridad = searchParams.get('prioridad')
     const tipo = searchParams.get('tipo')
     const asignado_a = searchParams.get('asignado_a')
-    const search = searchParams.get('search')
     
     const where: any = {}
     
@@ -23,16 +22,6 @@ export async function GET(request: NextRequest) {
     if (prioridad) where.prioridad = prioridad
     if (tipo) where.tipo = tipo
     if (asignado_a) where.asignado_a = parseInt(asignado_a)
-    
-    // Add search filter
-    if (search) {
-      where.OR = [
-        { numero_orden: { contains: search } },
-        { descripcion: { contains: search } },
-        { equipo: { nombre: { contains: search } } },
-        { tecnico: { nombre: { contains: search } } },
-      ]
-    }
     
     const ordenes = await prisma.orden_trabajo.findMany({
       where,
@@ -169,15 +158,21 @@ export async function POST(request: NextRequest) {
     
     // Crear notificación si hay técnico asignado
     if (data.asignado_a) {
-      await prisma.notificacion.create({
-        data: {
-          usuario_id: data.asignado_a,
-          tipo: 'orden_asignada',
-          titulo: 'Nueva orden asignada',
-          mensaje: `Se te ha asignado la orden ${orden.numero_orden}`,
-          datos: { orden_id: orden.id },
-        },
-      })
+      try {
+        await prisma.notificacion.create({
+          data: {
+            usuario_id: data.asignado_a,
+            tipo: 'orden_asignada',
+            titulo: 'Nueva orden asignada',
+            mensaje: `Se te ha asignado la orden ${orden.numero_orden}`,
+            datos: { orden_id: orden.id },
+          },
+        })
+        console.log('[v0] Notification created for technician:', data.asignado_a)
+      } catch (notificationError) {
+        console.error('[v0] Error creating notification for technician:', notificationError)
+        // No throw - we don't want to fail the orden creation if notification fails
+      }
     }
     
     return NextResponse.json(orden, { status: 201 })

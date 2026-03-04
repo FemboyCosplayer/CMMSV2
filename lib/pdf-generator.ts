@@ -111,7 +111,7 @@ function addFooter(doc: jsPDF) {
 }
 
 export async function generatePDF(options: {
-  tipo: "equipos" | "mantenimientos" | "ordenes" | "cronograma"
+  tipo: "equipos" | "mantenimientos" | "ordenes" | "cronograma" | "usuarios"
   fechaInicio?: string
   fechaFin?: string
   data: any
@@ -127,6 +127,8 @@ export async function generatePDF(options: {
     await addHeader(doc, "REPORTE DE MANTENIMIENTOS PROGRAMADOS")
   } else if (tipo === "ordenes") {
     await addHeader(doc, "REPORTE DE ÓRDENES DE TRABAJO")
+  } else if (tipo === "usuarios") {
+    await addHeader(doc, "REPORTE DE USUARIOS DEL SISTEMA")
   } else if (tipo === "cronograma") {
     return await generateCronogramaPDF(data, doc)
   }
@@ -195,6 +197,60 @@ export async function generatePDF(options: {
       },
       alternateRowStyles: { fillColor: [245, 245, 245] },
       margin: { left: 15, right: 15 },
+    })
+  } else if (tipo === "usuarios") {
+    // Summary stats
+    const totalUsers = data.length
+    const activeUsers = data.filter((u: any) => u.activo === true || u.estado === "Activo").length
+    const inactiveUsers = totalUsers - activeUsers
+    
+    doc.setFontSize(10)
+    doc.setFont("helvetica", "bold")
+    doc.setTextColor(0, 0, 0)
+    doc.text("Resumen:", 15, yPos)
+    doc.setFont("helvetica", "normal")
+    doc.setTextColor(80, 80, 80)
+    doc.text(`Total: ${totalUsers}  |  Activos: ${activeUsers}  |  Inactivos: ${inactiveUsers}`, 40, yPos)
+    yPos += 8
+
+    const tableData = data.map((user: any, index: number) => [
+      (index + 1).toString(),
+      user.nombre || "-",
+      user.email || "-",
+      user.rol || "-",
+      user.activo === true || user.estado === "Activo" ? "Activo" : "Inactivo",
+      formatDate(user.created_at),
+    ])
+    autoTable(doc, {
+      startY: yPos,
+      head: [["N°", "Nombre", "Correo Electrónico", "Rol", "Estado", "Fecha Registro"]],
+      body: tableData,
+      theme: "striped",
+      headStyles: {
+        fillColor: [0, 163, 224],
+        textColor: 255,
+        fontSize: 10,
+        fontStyle: "bold",
+      },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+      margin: { left: 15, right: 15 },
+      columnStyles: {
+        0: { cellWidth: 12, halign: "center" },
+        4: { halign: "center" },
+      },
+      didParseCell: (cellData) => {
+        // Color-code the estado column
+        if (cellData.column.index === 4 && cellData.section === "body") {
+          const value = cellData.cell.text[0]
+          if (value === "Activo") {
+            cellData.cell.styles.textColor = [22, 163, 74] // green
+            cellData.cell.styles.fontStyle = "bold"
+          } else if (value === "Inactivo") {
+            cellData.cell.styles.textColor = [220, 38, 38] // red
+            cellData.cell.styles.fontStyle = "bold"
+          }
+        }
+      },
     })
   } else {
     const tableData = data.map((orden) => [

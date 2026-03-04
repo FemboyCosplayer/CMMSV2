@@ -463,7 +463,7 @@ export default function DashboardPage() {
   const [newStatus, setNewStatus] = useState("") // ADDED: State for new status in change status dialog
 
   // CHANGE: Updated report type to include cronograma
-  const [reportType, setReportType] = useState<"equipos" | "mantenimientos" | "ordenes" | "cronograma">("equipos")
+  const [reportType, setReportType] = useState<"equipos" | "mantenimientos" | "ordenes" | "cronograma" | "usuarios">("equipos")
   const [reportFechaInicio, setReportFechaInicio] = useState("")
   const [reportFechaFin, setReportFechaFin] = useState("")
   const [isGeneratingReport, setIsGeneratingReport] = useState(false)
@@ -5426,6 +5426,9 @@ export default function DashboardPage() {
         // Ensure workOrders is loaded and filtered correctly before passing
         await loadWorkOrders() // Reload just in case
         data = workOrders
+      } else if (reportType === "usuarios") {
+        const response = await fetchUsuarios({ perPage: 1000 })
+        data = response.data
       } else if (reportType === "cronograma") {
         const equiposResponse = await fetchEquipos({})
         await loadMaintenanceSchedules()
@@ -5436,7 +5439,7 @@ export default function DashboardPage() {
         }
       }
 
-      if (reportType !== "cronograma" && (reportFechaInicio || reportFechaFin)) {
+      if (reportType !== "cronograma" && reportType !== "usuarios" && (reportFechaInicio || reportFechaFin)) {
         data = (data as any[]).filter((item) => {
           // Find the relevant date field in the item
           const itemDateString =
@@ -5530,6 +5533,12 @@ export default function DashboardPage() {
                       <span>Cronograma de Mantenimiento</span>
                     </div>
                   </SelectItem>
+                  <SelectItem value="usuarios">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      <span>Usuarios</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-gray-500">Seleccione el tipo de informaci��n que desea incluir en el reporte</p>
@@ -5590,6 +5599,7 @@ export default function DashboardPage() {
                 {reportType === "equipos" && `${equipment.length} equipos`}
                 {reportType === "mantenimientos" && `${maintenanceSchedules.length} mantenimientos`}
                 {reportType === "ordenes" && `${workOrders.length} órdenes`}
+                {reportType === "usuarios" && `${users.length} usuarios`}
                 {reportType === "cronograma" &&
                   `Equipos: ${equipment.length}, Mantenimientos: ${maintenanceSchedules.length}`}
               </div>

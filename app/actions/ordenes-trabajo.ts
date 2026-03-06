@@ -1,5 +1,6 @@
 "use server"
 
+import { prisma } from "@/lib/prisma"
 import {
   getOrdenesTrabajo,
   getOrdenTrabajo,
@@ -15,6 +16,91 @@ import {
 } from "@/lib/api/ordenes-trabajo"
 
 export type { OrdenTrabajo, OrdenesTrabajoFilters, OrdenesTrabajoResponse }
+
+export async function getAllOrdenesTrabajo(params?: {
+  page?: number
+  perPage?: number
+  estado?: string
+  prioridad?: string
+  tipo?: string
+  asignadoA?: number
+  equipoId?: number
+  search?: string
+}) {
+  try {
+    const page = params?.page || 1
+    const perPage = params?.perPage || 10
+    const skip = (page - 1) * perPage
+
+    const where: any = {}
+    
+    if (params?.estado) {
+      where.estado = params.estado
+    }
+    
+    if (params?.prioridad) {
+      where.prioridad = params.prioridad
+    }
+    
+    if (params?.tipo) {
+      where.tipo = params.tipo
+    }
+    
+    if (params?.asignadoA) {
+      where.asignado_a = params.asignadoA
+    }
+    
+    if (params?.equipoId) {
+      where.equipo_id = params.equipoId
+    }
+    
+    if (params?.search) {
+      where.OR = [
+        { descripcion: { contains: params.search } },
+        { equipo: { nombre: { contains: params.search } } },
+      ]
+    }
+
+    const [data, total] = await Promise.all([
+      prisma.orden_trabajo.findMany({
+        where,
+        include: {
+          equipo: {
+            select: {
+              id: true,
+              codigo: true,
+              nombre: true,
+              ubicacion: true,
+            },
+          },
+          creador: {
+            select: {
+              id: true,
+              nombre: true,
+              email: true,
+            },
+          },
+          tecnico: {
+            select: {
+              id: true,
+              nombre: true,
+              email: true,
+            },
+          },
+        },
+        skip,
+        take: perPage,
+        orderBy: { created_at: 'desc' }
+      }),
+      prisma.orden_trabajo.count({ where })
+    ])
+
+    return { data, total, page, perPage }
+  } catch (error) {
+    console.error("[v0] Error fetching ordenes trabajos:", error)
+    return { data: [], total: 0, page: 1, perPage: 10 }
+  }
+}
 
 export async function fetchOrdenesTrabajo(filters?: OrdenesTrabajoFilters): Promise<OrdenesTrabajoResponse> {
   try {

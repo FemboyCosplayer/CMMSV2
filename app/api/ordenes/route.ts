@@ -9,63 +9,29 @@ export async function GET(request: NextRequest) {
     await requireAuth()
     
     const { searchParams } = new URL(request.url)
-    const equipo_id = searchParams.get('equipo_id')
+    const equipoId = searchParams.get('equipo_id')
     const estado = searchParams.get('estado')
     const prioridad = searchParams.get('prioridad')
     const tipo = searchParams.get('tipo')
-    const asignado_a = searchParams.get('asignado_a')
+    const asignadoA = searchParams.get('asignado_a')
     const search = searchParams.get('search')
+    const page = searchParams.get('page')
+    const perPage = searchParams.get('perPage')
     
-    const where: any = {}
+    const { getAllOrdenesTrabajo } = await import('@/app/actions/ordenes-trabajo')
     
-    if (equipo_id) where.equipo_id = parseInt(equipo_id)
-    if (estado) where.estado = estado
-    if (prioridad) where.prioridad = prioridad
-    if (tipo) where.tipo = tipo
-    if (asignado_a) where.asignado_a = parseInt(asignado_a)
-    
-    if (search) {
-      where.OR = [
-        { descripcion: { contains: search } },
-        { equipo: { nombre: { contains: search } } },
-      ]
-    }
-    
-    const ordenes = await prisma.orden_trabajo.findMany({
-      where,
-      orderBy: { created_at: 'desc' },
-      include: {
-        equipo: {
-          select: {
-            id: true,
-            codigo: true,
-            nombre: true,
-            ubicacion: true,
-          },
-        },
-        creador: {
-          select: {
-            id: true,
-            nombre: true,
-            email: true,
-          },
-        },
-        tecnico: {
-          select: {
-            id: true,
-            nombre: true,
-            email: true,
-          },
-        },
-        _count: {
-          select: {
-            documentos: true,
-          },
-        },
-      },
+    const result = await getAllOrdenesTrabajo({
+      equipoId: equipoId ? parseInt(equipoId) : undefined,
+      estado: estado || undefined,
+      prioridad: prioridad || undefined,
+      tipo: tipo || undefined,
+      asignadoA: asignadoA ? parseInt(asignadoA) : undefined,
+      search: search || undefined,
+      page: page ? parseInt(page) : undefined,
+      perPage: perPage ? parseInt(perPage) : undefined,
     })
     
-    return NextResponse.json(ordenes)
+    return NextResponse.json(result)
   } catch (error: any) {
     console.error('[v0] Error fetching ordenes:', error)
     return NextResponse.json(

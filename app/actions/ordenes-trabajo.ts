@@ -26,6 +26,8 @@ export async function getAllOrdenesTrabajo(params?: {
   asignadoA?: number
   equipoId?: number
   search?: string
+  fechaDesde?: string
+  fechaHasta?: string
 }) {
   try {
     const page = params?.page || 1

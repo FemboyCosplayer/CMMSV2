@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
     const prioridad = searchParams.get('prioridad')
     const tipo = searchParams.get('tipo')
     const asignado_a = searchParams.get('asignado_a')
+    const search = searchParams.get('search')
     
     const where: any = {}
     
@@ -22,6 +23,17 @@ export async function GET(request: NextRequest) {
     if (prioridad) where.prioridad = prioridad
     if (tipo) where.tipo = tipo
     if (asignado_a) where.asignado_a = parseInt(asignado_a)
+    
+    // Agregar búsqueda en múltiples campos
+    if (search) {
+      where.OR = [
+        { numero_orden: { contains: search, mode: 'insensitive' } },
+        { descripcion: { contains: search, mode: 'insensitive' } },
+        { equipo: { nombre: { contains: search, mode: 'insensitive' } } },
+        { creador: { nombre: { contains: search, mode: 'insensitive' } } },
+        { tecnico: { nombre: { contains: search, mode: 'insensitive' } } },
+      ]
+    }
     
     const ordenes = await prisma.orden_trabajo.findMany({
       where,

@@ -26,11 +26,8 @@ export async function GET(request: NextRequest) {
     
     if (search) {
       where.OR = [
-        { numero_orden: { contains: search } },
         { descripcion: { contains: search } },
         { equipo: { nombre: { contains: search } } },
-        { creador: { nombre: { contains: search } } },
-        { tecnico: { nombre: { contains: search } } },
       ]
     }
     

@@ -24,14 +24,13 @@ export async function GET(request: NextRequest) {
     if (tipo) where.tipo = tipo
     if (asignado_a) where.asignado_a = parseInt(asignado_a)
     
-    // Agregar búsqueda en múltiples campos
     if (search) {
       where.OR = [
-        { numero_orden: { contains: search, mode: 'insensitive' } },
-        { descripcion: { contains: search, mode: 'insensitive' } },
-        { equipo: { nombre: { contains: search, mode: 'insensitive' } } },
-        { creador: { nombre: { contains: search, mode: 'insensitive' } } },
-        { tecnico: { nombre: { contains: search, mode: 'insensitive' } } },
+        { numero_orden: { contains: search } },
+        { descripcion: { contains: search } },
+        { equipo: { nombre: { contains: search } } },
+        { creador: { nombre: { contains: search } } },
+        { tecnico: { nombre: { contains: search } } },
       ]
     }
     

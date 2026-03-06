@@ -92,7 +92,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useRouter } from "next/navigation"
 import {
-  getAllOrdenesTrabajo,
+  fetchOrdenesTrabajo,
   saveOrdenTrabajo,
   removeOrdenTrabajo,
   asignarTecnicoAOrden,
@@ -673,7 +673,7 @@ export default function DashboardPage() {
       
       const response = await deduplicateRequest(
         cacheKey,
-        () => getAllOrdenesTrabajo(params),
+        () => fetchOrdenesTrabajo(params),
         3 * 60 * 1000 // 3 minute cache
       )
 
@@ -688,9 +688,7 @@ export default function DashboardPage() {
       }
       
       setWorkOrders(response.data)
-      // Calculate total pages from total count and perPage
-      const totalPages = Math.ceil(response.total / (response.perPage || 10))
-      setOrderTotalPages(totalPages)
+      setOrderTotalPages(response.lastPage) // Use renamed state
       console.log("[v0] loadWorkOrders - Successfully loaded", response.data?.length ?? 0, "items")
     } catch (error) {
       console.error("[v0] loadWorkOrders - Error:", error)

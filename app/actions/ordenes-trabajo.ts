@@ -1,6 +1,7 @@
 "use server"
 
 import { prisma } from "@/lib/prisma"
+import { transformOrdenTrabajoToUI, type OrdenTrabajo } from "@/lib/orden-trabajo-transform"
 import {
   getOrdenesTrabajo,
   getOrdenTrabajo,
@@ -10,7 +11,6 @@ import {
   asignarTecnico,
   cambiarEstado,
   exportOrdenTrabajoPDF,
-  type OrdenTrabajo,
   type OrdenesTrabajoFilters,
   type OrdenesTrabajoResponse,
 } from "@/lib/api/ordenes-trabajo"
@@ -65,28 +65,9 @@ export async function getAllOrdenesTrabajo(params?: {
       prisma.orden_trabajo.findMany({
         where,
         include: {
-          equipo: {
-            select: {
-              id: true,
-              codigo: true,
-              nombre: true,
-              ubicacion: true,
-            },
-          },
-          creador: {
-            select: {
-              id: true,
-              nombre: true,
-              email: true,
-            },
-          },
-          tecnico: {
-            select: {
-              id: true,
-              nombre: true,
-              email: true,
-            },
-          },
+          equipo: true,
+          creador: true,
+          tecnico: true,
         },
         skip,
         take: perPage,
@@ -95,7 +76,10 @@ export async function getAllOrdenesTrabajo(params?: {
       prisma.orden_trabajo.count({ where })
     ])
 
-    return { data, total, page, perPage }
+    // Transform data to UI format (camelCase)
+    const transformedData = data.map(transformOrdenTrabajoToUI)
+
+    return { data: transformedData, total, page, perPage }
   } catch (error) {
     console.error("[v0] Error fetching ordenes trabajos:", error)
     return { data: [], total: 0, page: 1, perPage: 10 }

@@ -406,6 +406,7 @@ export default function DashboardPage() {
   })
   const [userRole, setUserRole] = useState<RoleType>("administrador") // Changed to RoleType
 
+  const [userSearchTerm, setUserSearchTerm] = useState("")
   const [usersPaginaActual, setUsersPaginaActual] = useState(1)
   const [usersPerPage, setUsersPerPage] = useState(10)
   const [usersTotalPages, setUsersTotalPages] = useState(1) // Initialize with 1
@@ -463,7 +464,7 @@ export default function DashboardPage() {
   const [newStatus, setNewStatus] = useState("") // ADDED: State for new status in change status dialog
 
   // CHANGE: Updated report type to include cronograma
-  const [reportType, setReportType] = useState<"equipos" | "mantenimientos" | "ordenes" | "cronograma">("equipos")
+  const [reportType, setReportType] = useState<"equipos" | "mantenimientos" | "ordenes" | "cronograma" | "usuarios">("equipos")
   const [reportFechaInicio, setReportFechaInicio] = useState("")
   const [reportFechaFin, setReportFechaFin] = useState("")
   const [isGeneratingReport, setIsGeneratingReport] = useState(false)
@@ -1119,7 +1120,7 @@ export default function DashboardPage() {
     if (activeSection === "tecnicos") {
       loadUsers()
     }
-  }, [activeSection, usersPaginaActual, usersPerPage])
+  }, [activeSection, usersPaginaActual, usersPerPage, userFilters, userSearchTerm])
 
   const loadUsers = async () => {
     setUsersLoading(true)
@@ -1127,6 +1128,7 @@ export default function DashboardPage() {
       const params = {
         rol: userFilters.rol !== "all" ? userFilters.rol : undefined,
         estado: userFilters.estado !== "all" ? userFilters.estado : undefined,
+        search: userSearchTerm || undefined,
         page: usersPaginaActual, // Added pagination params
         perPage: usersPerPage,
       }
@@ -1566,9 +1568,11 @@ export default function DashboardPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
+                onClick={() => {
                   setOrderFilters({ estado: "all", prioridad: "all", tipo: "all", fechaDesde: "", fechaHasta: "" })
-                }
+                  setSearchOrder("")
+                  setOrderCurrentPage(1)
+                }}
               >
                 Limpiar
               </Button>
@@ -1596,7 +1600,10 @@ export default function DashboardPage() {
                   className="w-64"
                   placeholder="Buscar órdenes..."
                   value={searchOrder}
-                  onChange={(e) => setSearchOrder(e.target.value)}
+                  onChange={(e) => {
+                    setSearchOrder(e.target.value)
+                    setOrderCurrentPage(1)
+                  }}
                 />
               </div>
             </div>
@@ -3913,7 +3920,11 @@ export default function DashboardPage() {
     const filteredUsers = users.filter((user) => {
       const matchRol = userFilters.rol === "all" || user.rol === userFilters.rol
       const matchEstado = userFilters.estado === "all" || user.estado === userFilters.estado
-      return matchRol && matchEstado
+      const matchSearch = !userSearchTerm || 
+        user.nombre?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+        user.email?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+        user.rol?.toLowerCase().includes(userSearchTerm.toLowerCase())
+      return matchRol && matchEstado && matchSearch
     })
 
     // Calculate pagination values
@@ -3976,8 +3987,8 @@ export default function DashboardPage() {
                   <SelectItem value="Inactivo">Inactivo</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="sm" onClick={() => setUserFilters({ rol: "all", estado: "all" })}>
-                <Search className="h-4 w-4 mr-2" />
+              <Button variant="outline" size="sm" onClick={() => { setUserFilters({ rol: "all", estado: "all" }); setUserSearchTerm(""); setUsersPaginaActual(1); }}>
+                <X className="h-4 w-4 mr-2" />
                 Limpiar
               </Button>
             </div>
@@ -4003,6 +4014,19 @@ export default function DashboardPage() {
                   </SelectContent>
                 </Select>
                 <span className="text-sm text-gray-600">registros</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Search className="h-4 w-4 text-gray-500" />
+                <span className="text-sm text-gray-600">Buscar:</span>
+                <Input
+                  className="w-56"
+                  placeholder="Nombre, correo..."
+                  value={userSearchTerm}
+                  onChange={(e) => {
+                    setUserSearchTerm(e.target.value)
+                    setUsersPaginaActual(1)
+                  }}
+                />
               </div>
             </div>
 
@@ -4999,7 +5023,28 @@ export default function DashboardPage() {
 
 
 
-  const renderMantenimiento = () => (
+  const renderMantenimiento = () => {
+    // Filter maintenance schedules based on search term and filters
+    const filteredMaintenanceSchedules = maintenanceSchedules.filter((m: any) => {
+      // Apply search term filter
+      const searchLower = maintenanceSearchTerm.toLowerCase()
+      const equipoNombre = typeof m.equipo === 'object' ? m.equipo?.nombre : m.equipo
+      const matchSearch = !maintenanceSearchTerm || 
+        (equipoNombre && equipoNombre.toLowerCase().includes(searchLower)) ||
+        (m.tipo && m.tipo.toLowerCase().includes(searchLower)) ||
+        (m.frecuencia && m.frecuencia.toLowerCase().includes(searchLower)) ||
+        (m.observaciones && m.observaciones.toLowerCase().includes(searchLower)) ||
+        (m.id && m.id.toString().includes(searchLower))
+      
+      // Apply tipo filter
+      const matchTipo = maintenanceFilters.tipo === "all" || m.tipo === maintenanceFilters.tipo
+      
+      // Apply frecuencia filter
+      const matchFrecuencia = maintenanceFilters.frecuencia === "all" || m.frecuencia === maintenanceFilters.frecuencia
+      
+      return matchSearch && matchTipo && matchFrecuencia
+    })
+    return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">{""}</h1>
@@ -5095,6 +5140,15 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold">Mantenimientos Programados</h3>
             <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Buscar:</span>
+                <Input
+                  className="w-48"
+                  placeholder="Equipo, tipo, observaciones..."
+                  value={maintenanceSearchTerm}
+                  onChange={(e) => setMaintenanceSearchTerm(e.target.value)}
+                />
+              </div>
               <Select
                 value={maintenanceFilters.tipo}
                 onValueChange={(value) => setMaintenanceFilters({ ...maintenanceFilters, tipo: value })}
@@ -5104,8 +5158,8 @@ export default function DashboardPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos los tipos</SelectItem>
-                  <SelectItem value="calibracion">Calibraci��n</SelectItem>
-                  <SelectItem value="inspeccion">Inspección</SelectItem>
+                  <SelectItem value="calibracion">Calibracion</SelectItem>
+                  <SelectItem value="inspeccion">Inspeccion</SelectItem>
                   <SelectItem value="limpieza">Limpieza</SelectItem>
                 </SelectContent>
               </Select>
@@ -5127,7 +5181,10 @@ export default function DashboardPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setMaintenanceFilters({ tipo: "all", frecuencia: "all" })}
+                onClick={() => {
+                  setMaintenanceFilters({ tipo: "all", frecuencia: "all" })
+                  setMaintenanceSearchTerm("")
+                }}
               >
                 Limpiar
               </Button>
@@ -5156,7 +5213,7 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white">
-                  {maintenanceSchedules.map((m: any) => (
+                  {filteredMaintenanceSchedules.map((m: any) => (
                     <tr key={m.id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="px-4 py-2 text-sm text-gray-600 font-mono">{m.id}</td>
                       <td className="px-4 py-2 font-medium">{typeof m.equipo === 'object' ? m.equipo?.nombre : m.equipo || "N/A"}</td>
@@ -5253,6 +5310,11 @@ export default function DashboardPage() {
                   ))}
                 </tbody>
               </table>
+              {filteredMaintenanceSchedules.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No se encontraron mantenimientos con los criterios de búsqueda.</p>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
@@ -5466,6 +5528,7 @@ export default function DashboardPage() {
       </Dialog>
     </div>
   )
+  }
 
   const handleGenerateReport = async () => {
     setIsGeneratingReport(true)
@@ -5501,6 +5564,9 @@ export default function DashboardPage() {
         // Ensure workOrders is loaded and filtered correctly before passing
         await loadWorkOrders() // Reload just in case
         data = workOrders
+      } else if (reportType === "usuarios") {
+        const response = await fetchUsuarios({ perPage: 1000 })
+        data = response.data
       } else if (reportType === "cronograma") {
         const equiposResponse = await fetchEquipos({})
         await loadMaintenanceSchedules()
@@ -5511,7 +5577,7 @@ export default function DashboardPage() {
         }
       }
 
-      if (reportType !== "cronograma" && (reportFechaInicio || reportFechaFin)) {
+      if (reportType !== "cronograma" && reportType !== "usuarios" && (reportFechaInicio || reportFechaFin)) {
         data = (data as any[]).filter((item) => {
           // Find the relevant date field in the item
           const itemDateString =
@@ -5605,6 +5671,12 @@ export default function DashboardPage() {
                       <span>Cronograma de Mantenimiento</span>
                     </div>
                   </SelectItem>
+                  <SelectItem value="usuarios">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      <span>Usuarios</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-gray-500">Seleccione el tipo de informaci��n que desea incluir en el reporte</p>
@@ -5665,6 +5737,7 @@ export default function DashboardPage() {
                 {reportType === "equipos" && `${equipment.length} equipos`}
                 {reportType === "mantenimientos" && `${maintenanceSchedules.length} mantenimientos`}
                 {reportType === "ordenes" && `${workOrders.length} órdenes`}
+                {reportType === "usuarios" && `${users.length} usuarios`}
                 {reportType === "cronograma" &&
                   `Equipos: ${equipment.length}, Mantenimientos: ${maintenanceSchedules.length}`}
               </div>

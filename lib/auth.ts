@@ -63,10 +63,36 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 
 // Middleware para verificar autenticación
 export async function requireAuth(request?: any): Promise<JWTPayload> {
-  let session = await getSession()
-  console.log('[v0] requireAuth - session from cookies:', !!session)
+  let session: JWTPayload | null = null
   
-  // Si no hay sesión en cookies, intentar obtener del header Authorization (Bearer token)
+  // First try to get token from request cookies (for API routes with external hosts)
+  if (request) {
+    const cookieHeader = request.headers.get('cookie')
+    console.log('[v0] requireAuth - cookie header present:', !!cookieHeader)
+    
+    if (cookieHeader) {
+      // Parse cookies from header
+      const cookies = cookieHeader.split(';').reduce((acc: Record<string, string>, cookie: string) => {
+        const [key, value] = cookie.trim().split('=')
+        if (key && value) acc[key] = value
+        return acc
+      }, {})
+      
+      if (cookies['token']) {
+        console.log('[v0] requireAuth - found token in request cookie')
+        session = await verifyToken(cookies['token'])
+        console.log('[v0] requireAuth - request cookie token verification:', session ? 'SUCCESS' : 'FAILED')
+      }
+    }
+  }
+  
+  // Try Next.js cookies store if no session yet
+  if (!session) {
+    session = await getSession()
+    console.log('[v0] requireAuth - session from Next.js cookies:', !!session)
+  }
+  
+  // Try Authorization Bearer token header
   if (!session && request) {
     const authHeader = request.headers.get('Authorization')
     console.log('[v0] requireAuth - authHeader present:', !!authHeader)

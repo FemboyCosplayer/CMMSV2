@@ -426,6 +426,7 @@ export default function DashboardPage() {
     tipo: "all",
     frecuencia: "all",
   })
+  const [maintenanceSearchTerm, setMaintenanceSearchTerm] = useState("")
   const [calendarView, setCalendarView] = useState(false) // State to toggle between list and calendar view
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false)

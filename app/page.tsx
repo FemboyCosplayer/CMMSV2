@@ -2757,6 +2757,9 @@ export default function DashboardPage() {
         fileSize: file.size,
         equipmentId: selectedEquipment.id,
         userId: userId,
+        hasAuthToken: !!authToken,
+        authTokenLength: authToken?.length || 0,
+        headers: Object.keys(headers),
       })
       
       const response = await fetch(`/api/equipos/${selectedEquipment.id}/documentos`, {

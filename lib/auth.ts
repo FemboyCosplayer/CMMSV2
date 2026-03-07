@@ -65,35 +65,8 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 export async function requireAuth(request?: any): Promise<JWTPayload> {
   let session: JWTPayload | null = null
   
-  // First try to get token from request cookies (for API routes with external hosts)
+  // PRIORITY 1: Try Authorization Bearer token header (most reliable for cross-origin)
   if (request) {
-    const cookieHeader = request.headers.get('cookie')
-    console.log('[v0] requireAuth - cookie header present:', !!cookieHeader)
-    
-    if (cookieHeader) {
-      // Parse cookies from header
-      const cookies = cookieHeader.split(';').reduce((acc: Record<string, string>, cookie: string) => {
-        const [key, value] = cookie.trim().split('=')
-        if (key && value) acc[key] = value
-        return acc
-      }, {})
-      
-      if (cookies['token']) {
-        console.log('[v0] requireAuth - found token in request cookie')
-        session = await verifyToken(cookies['token'])
-        console.log('[v0] requireAuth - request cookie token verification:', session ? 'SUCCESS' : 'FAILED')
-      }
-    }
-  }
-  
-  // Try Next.js cookies store if no session yet
-  if (!session) {
-    session = await getSession()
-    console.log('[v0] requireAuth - session from Next.js cookies:', !!session)
-  }
-  
-  // Try Authorization Bearer token header
-  if (!session && request) {
     const authHeader = request.headers.get('Authorization')
     console.log('[v0] requireAuth - authHeader present:', !!authHeader)
     
@@ -105,7 +78,7 @@ export async function requireAuth(request?: any): Promise<JWTPayload> {
     }
   }
   
-  // Fallback: try to get userId from X-User-ID header to authenticate basic operations
+  // PRIORITY 2: Try X-User-ID header (fallback for when token is unavailable)
   if (!session && request) {
     const userId = request.headers.get('X-User-ID')
     console.log('[v0] requireAuth - X-User-ID header present:', !!userId)
@@ -126,6 +99,33 @@ export async function requireAuth(request?: any): Promise<JWTPayload> {
         console.error('[v0] requireAuth - failed to parse X-User-ID:', e)
       }
     }
+  }
+  
+  // PRIORITY 3: Try token from request cookies (for API routes with external hosts)
+  if (!session && request) {
+    const cookieHeader = request.headers.get('cookie')
+    console.log('[v0] requireAuth - cookie header present:', !!cookieHeader)
+    
+    if (cookieHeader) {
+      // Parse cookies from header
+      const cookies = cookieHeader.split(';').reduce((acc: Record<string, string>, cookie: string) => {
+        const [key, value] = cookie.trim().split('=')
+        if (key && value) acc[key] = value
+        return acc
+      }, {})
+      
+      if (cookies['token']) {
+        console.log('[v0] requireAuth - found token in request cookie')
+        session = await verifyToken(cookies['token'])
+        console.log('[v0] requireAuth - request cookie token verification:', session ? 'SUCCESS' : 'FAILED')
+      }
+    }
+  }
+  
+  // PRIORITY 4: Try Next.js cookies store
+  if (!session) {
+    session = await getSession()
+    console.log('[v0] requireAuth - session from Next.js cookies:', !!session)
   }
   
   if (!session) {

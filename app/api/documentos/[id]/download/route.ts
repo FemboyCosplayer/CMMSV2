@@ -8,10 +8,13 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  console.log('[v0] Download route called')
   try {
     await requireAuth(request)
+    console.log('[v0] Auth passed')
     
     const { id } = await params
+    console.log('[v0] Document ID:', id)
     const documentoId = parseInt(id)
     
     if (isNaN(documentoId)) {

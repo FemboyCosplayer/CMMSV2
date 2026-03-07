@@ -82,6 +82,7 @@ export async function uploadDocumento(
 
 export async function downloadDocumento(documentoId: number): Promise<Blob> {
   const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null
+  const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null
 
   const headers: Record<string, string> = {
     Accept: "application/octet-stream",
@@ -90,13 +91,26 @@ export async function downloadDocumento(documentoId: number): Promise<Blob> {
   if (token) {
     headers["Authorization"] = `Bearer ${token}`
   }
+  
+  // Add X-User-ID as fallback for cross-origin auth
+  if (userId) {
+    headers["X-User-ID"] = userId
+  }
+
+  console.log('[v0] downloadDocumento - requesting:', `/api/documentos/${documentoId}/download`)
+  console.log('[v0] downloadDocumento - headers:', Object.keys(headers))
 
   const response = await fetch(`/api/documentos/${documentoId}/download`, {
     method: "GET",
     headers,
+    credentials: "include",
   })
 
+  console.log('[v0] downloadDocumento - response status:', response.status)
+
   if (!response.ok) {
+    const errorText = await response.text()
+    console.error('[v0] downloadDocumento - error:', errorText)
     throw new Error(`Error al descargar documento: ${response.status}`)
   }
 

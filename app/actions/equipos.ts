@@ -119,7 +119,20 @@ export async function fetchEquipoDetails(id: number): Promise<EquipoWithDetails 
         mantenimientos: true,
         ordenesTrabajo: true,
         mantenimientosRealizados: true,
-        documentos: true,
+        documentos: {
+          include: {
+            usuario: {
+              select: {
+                id: true,
+                nombre: true,
+                email: true,
+              }
+            }
+          },
+          orderBy: {
+            created_at: 'desc'
+          }
+        },
       }
     })
     
@@ -129,6 +142,9 @@ export async function fetchEquipoDetails(id: number): Promise<EquipoWithDetails 
     return null
   }
 }
+
+// Alias for getEquipo (used in page.tsx)
+export const getEquipo = fetchEquipoDetails
 
 // Guardar equipo (crear o actualizar)
 export async function saveEquipo(data: Equipo, userId?: string): Promise<{ success: boolean; equipo?: Equipo; error?: string }> {

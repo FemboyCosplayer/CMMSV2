@@ -93,48 +93,13 @@ export async function getOrdenesDB(filters?: any): Promise<any> {
       where.prioridad = filters.prioridad
     }
 
-    if (filters?.tipo) {
-      // Normalize the tipo filter to match DB values (remove accents for comparison)
-      const tipoNormalized = filters.tipo.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
-      where.tipo = { contains: tipoNormalized, mode: 'insensitive' }
-    }
-
     if (filters?.equipo_id) {
       where.equipo_id = filters.equipo_id
-    }
-
-    // Date range filters
-    if (filters?.fechaDesde || filters?.fechaHasta) {
-      where.fecha_solicitud = {}
-      if (filters.fechaDesde) {
-        where.fecha_solicitud.gte = new Date(filters.fechaDesde)
-      }
-      if (filters.fechaHasta) {
-        // Set to end of day
-        const endDate = new Date(filters.fechaHasta)
-        endDate.setHours(23, 59, 59, 999)
-        where.fecha_solicitud.lte = endDate
-      }
-    }
-
-    // Search filter - search across numero_orden, descripcion, equipo name, tecnico name
-    if (filters?.search) {
-      const searchTerm = filters.search.trim()
-      if (searchTerm) {
-        where.OR = [
-          { numero_orden: { contains: searchTerm, mode: 'insensitive' } },
-          { descripcion: { contains: searchTerm, mode: 'insensitive' } },
-          { equipo: { nombre: { contains: searchTerm, mode: 'insensitive' } } },
-          { tecnico: { nombre: { contains: searchTerm, mode: 'insensitive' } } },
-        ]
-      }
     }
 
     const perPage = filters?.perPage || 10
     const page = filters?.page || 1
     const skip = (page - 1) * perPage
-
-    console.log('[v0] getOrdenesDB - Prisma where clause:', JSON.stringify(where, null, 2))
 
     const [ordenes, total] = await Promise.all([
       prisma.ordenTrabajo.findMany({

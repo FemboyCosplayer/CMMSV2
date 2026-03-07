@@ -292,3 +292,33 @@ export async function removeEquipo(id: number, userId?: string): Promise<{ succe
     return { success: false, error: "Error al eliminar el equipo" }
   }
 }
+
+// Verificar asociaciones del equipo (mantenimientos y ordenes de trabajo)
+export async function checkEquipoAssociations(id: number): Promise<{
+  hasMaintenances: boolean
+  hasWorkOrders: boolean
+  maintenanceCount: number
+  workOrderCount: number
+}> {
+  try {
+    const [maintenanceCount, workOrderCount] = await Promise.all([
+      prisma.mantenimiento.count({ where: { equipo_id: id } }),
+      prisma.ordenTrabajo.count({ where: { equipo_id: id } })
+    ])
+    
+    return {
+      hasMaintenances: maintenanceCount > 0,
+      hasWorkOrders: workOrderCount > 0,
+      maintenanceCount,
+      workOrderCount
+    }
+  } catch (error) {
+    console.error("[v0] Error checking equipment associations:", error)
+    return {
+      hasMaintenances: false,
+      hasWorkOrders: false,
+      maintenanceCount: 0,
+      workOrderCount: 0
+    }
+  }
+}

@@ -1,4 +1,6 @@
 import { prisma } from '@/lib/prisma'
+import { getSession } from '@/lib/auth'
+import { createAuditLog } from '@/app/actions/logs'
 import type { OrdenTrabajo } from '@/lib/api/ordenes-trabajo'
 
 // Helper to transform database record to OrdenTrabajo type
@@ -55,6 +57,17 @@ export async function createOrdenDB(data: any): Promise<OrdenTrabajo> {
     })
 
     console.log('[v0] createOrdenDB - Created orden:', orden.id)
+    
+    // Log the creation
+    const session = await getSession()
+    await createAuditLog({
+      usuario_id: session?.id,
+      accion: 'CREAR',
+      modulo: 'ORDENES',
+      descripcion: `Orden de trabajo ${orden.numero_orden} creada`,
+      datos: { ordenId: orden.id, numero_orden: orden.numero_orden, tipo: orden.tipo }
+    }).catch(err => console.error("[v0] Error logging orden creation:", err))
+    
     return transformFromDB(orden)
   } catch (error) {
     console.error('[v0] createOrdenDB - Error:', error)
@@ -173,6 +186,17 @@ export async function updateOrdenDB(id: number, data: any): Promise<OrdenTrabajo
     })
 
     console.log('[v0] updateOrdenDB - Updated orden:', id)
+    
+    // Log the update
+    const session = await getSession()
+    await createAuditLog({
+      usuario_id: session?.id,
+      accion: 'EDITAR',
+      modulo: 'ORDENES',
+      descripcion: `Orden de trabajo ${orden.numero_orden} actualizada`,
+      datos: { ordenId: id, numero_orden: orden.numero_orden, tipo: orden.tipo }
+    }).catch(err => console.error("[v0] Error logging orden update:", err))
+    
     return transformFromDB(orden)
   } catch (error) {
     console.error('[v0] updateOrdenDB - Error:', error)
@@ -184,11 +208,29 @@ export async function deleteOrdenDB(id: number): Promise<boolean> {
   console.log('[v0] deleteOrdenDB - Deleting orden', id)
 
   try {
+    // Get orden details before deletion for logging
+    const orden = await prisma.ordenTrabajo.findUnique({
+      where: { id }
+    })
+
     await prisma.ordenTrabajo.delete({
       where: { id },
     })
 
     console.log('[v0] deleteOrdenDB - Deleted orden:', id)
+    
+    // Log the deletion
+    if (orden) {
+      const session = await getSession()
+      await createAuditLog({
+        usuario_id: session?.id,
+        accion: 'ELIMINAR',
+        modulo: 'ORDENES',
+        descripcion: `Orden de trabajo ${orden.numero_orden} eliminada`,
+        datos: { ordenId: id, numero_orden: orden.numero_orden, tipo: orden.tipo }
+      }).catch(err => console.error("[v0] Error logging orden deletion:", err))
+    }
+    
     return true
   } catch (error) {
     console.error('[v0] deleteOrdenDB - Error:', error)
@@ -214,6 +256,17 @@ export async function asignarTecnicoDB(ordenId: number, tecnicoId: number): Prom
     })
 
     console.log('[v0] asignarTecnicoDB - Assigned tecnico')
+    
+    // Log the assignment
+    const session = await getSession()
+    await createAuditLog({
+      usuario_id: session?.id,
+      accion: 'EDITAR',
+      modulo: 'ORDENES',
+      descripcion: `Técnico asignado a orden de trabajo ${orden.numero_orden}`,
+      datos: { ordenId: ordenId, numero_orden: orden.numero_orden, tecnico_id: tecnicoId }
+    }).catch(err => console.error("[v0] Error logging tecnico assignment:", err))
+    
     return transformFromDB(orden)
   } catch (error) {
     console.error('[v0] asignarTecnicoDB - Error:', error)
@@ -249,6 +302,17 @@ export async function cambiarEstadoDB(
     })
 
     console.log('[v0] cambiarEstadoDB - Changed estado')
+    
+    // Log the status change
+    const session = await getSession()
+    await createAuditLog({
+      usuario_id: session?.id,
+      accion: 'EDITAR',
+      modulo: 'ORDENES',
+      descripcion: `Estado de orden de trabajo ${orden.numero_orden} cambiado a ${nuevoEstado}`,
+      datos: { ordenId: ordenId, numero_orden: orden.numero_orden, estado: nuevoEstado }
+    }).catch(err => console.error("[v0] Error logging estado change:", err))
+    
     return transformFromDB(orden)
   } catch (error) {
     console.error('[v0] cambiarEstadoDB - Error:', error)

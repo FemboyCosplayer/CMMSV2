@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { createAuditLog } from "./logs"
+import { getSession } from "@/lib/auth"
 
 export type Equipo = {
   id?: number
@@ -245,7 +246,9 @@ export async function saveEquipo(data: Equipo, userId?: string): Promise<{ succe
     
     // Log the action
     const isUpdate = data.id && data.id > 0
+    const session = await getSession()
     await createAuditLog({
+      usuario_id: session?.id,
       accion: isUpdate ? 'EDITAR' : 'CREAR',
       modulo: 'EQUIPOS',
       descripcion: `Equipo ${data.nombre} ${isUpdate ? 'actualizado' : 'creado'}`,
@@ -278,7 +281,9 @@ export async function removeEquipo(id: number, userId?: string): Promise<{ succe
     
     // Log the deletion
     if (equipo) {
+      const session = await getSession()
       await createAuditLog({
+        usuario_id: session?.id,
         accion: 'ELIMINAR',
         modulo: 'EQUIPOS',
         descripcion: `Equipo ${equipo.nombre} eliminado`,

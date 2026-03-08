@@ -108,8 +108,8 @@ export async function DELETE(
     await prisma.log.create({
       data: {
         usuario_id: session.id,
-        accion: 'Eliminar',
-        modulo: 'Documentos',
+        accion: 'ELIMINAR',
+        modulo: 'DOCUMENTOS',
         descripcion: `Documento eliminado: ${documento.nombre}`,
         datos: { documento_id: documentoId, nombre: documento.nombre },
       },

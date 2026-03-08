@@ -1,110 +1,111 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Bell, AlertCircle, Wrench, Clock, User, Check, X } from 'lucide-react'
+import { Bell, AlertCircle, CheckCircle2, Clock, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import useSWR from "swr"
+import { getNotifications, type Notification, markAsRead, markAllAsRead } from "@/app/actions/notificaciones"
 
-export interface Notification {
-  id: number
-  usuario_id: number
-  tipo: string
-  titulo: string
+interface NotificationWithType extends Notification {
   mensaje: string
-  leida: boolean
-  fecha_envio: string
-  datos?: any
-  created_at: string
-  updated_at: string
+  fecha: string
 }
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
-
-function getNotificationIcon(tipo: string) {
-  switch (tipo) {
-    case 'mantenimiento_vencido':
-      return <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
-    case 'mantenimiento_proximo':
-      return <Clock className="h-4 w-4 text-yellow-500 flex-shrink-0" />
-    case 'mantenimiento_sin_asignar':
-      return <User className="h-4 w-4 text-blue-500 flex-shrink-0" />
-    case 'mantenimiento':
-      return <Wrench className="h-4 w-4 text-purple-500 flex-shrink-0" />
+function getNotificationIcon(tipo?: string) {
+  switch (tipo?.toLowerCase()) {
+    case "warning":
+      return <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0" />
+    case "error":
+      return <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+    case "success":
+      return <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+    case "info":
     default:
-      return <Bell className="h-4 w-4 text-gray-500 flex-shrink-0" />
+      return <Clock className="h-5 w-5 text-blue-500 flex-shrink-0" />
   }
 }
 
-function getNotificationBadgeColor(tipo: string) {
-  switch (tipo) {
-    case 'mantenimiento_vencido':
-      return 'bg-red-100 text-red-800'
-    case 'mantenimiento_proximo':
-      return 'bg-yellow-100 text-yellow-800'
-    case 'mantenimiento_sin_asignar':
-      return 'bg-blue-100 text-blue-800'
+function getNotificationBgColor(tipo?: string) {
+  switch (tipo?.toLowerCase()) {
+    case "warning":
+      return "bg-amber-50 dark:bg-amber-950"
+    case "error":
+      return "bg-red-50 dark:bg-red-950"
+    case "success":
+      return "bg-emerald-50 dark:bg-emerald-950"
+    case "info":
     default:
-      return 'bg-gray-100 text-gray-800'
+      return "bg-blue-50 dark:bg-blue-950"
   }
+}
+
+function formatTime(dateString: string): string {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+  if (hours < 1) return "Hace unos minutos"
+  if (hours === 1) return "Hace 1 hora"
+  if (hours < 24) return `Hace ${hours} horas`
+  if (days === 1) return "Hace 1 día"
+  return `Hace ${days} días`
 }
 
 export function NotificationsDropdown() {
-  const { data = [], error, isLoading, mutate } = useSWR<Notification[]>('/api/notificaciones', fetcher, {
-    refreshInterval: 15000,
-  })
+  const [notifications, setNotifications] = useState<NotificationWithType[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const unreadCount = data?.filter((n) => !n.leida).length || 0
-
-  const handleMarkAllAsRead = async () => {
-    try {
-      const response = await fetch('/api/notificaciones/marcar-todas-leidas', {
-        method: 'POST',
-        credentials: 'include',
-      })
-      if (response.ok) {
-        mutate()
+  useEffect(() => {
+    const loadNotifications = async () => {
+      try {
+        setLoading(true)
+        const data = await getNotifications()
+        setNotifications(Array.isArray(data) ? (data as NotificationWithType[]) : [])
+      } catch (error) {
+        console.error("[v0] Failed to load notifications:", error)
+        setNotifications([])
+      } finally {
+        setLoading(false)
       }
+    }
+
+    loadNotifications()
+    const interval = setInterval(loadNotifications, 15000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const unreadCount = notifications.filter((n) => !n.leida).length
+
+  const handleMarkAsRead = async (id: number, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    try {
+      await markAsRead(id)
+      setNotifications(prev => 
+        prev.map(n => n.id === id ? { ...n, leida: true } : n)
+      )
     } catch (error) {
-      console.error('Error marking all notifications as read:', error)
+      console.error("Error marking notification as read:", error)
     }
   }
 
-  const handleMarkAsRead = async (e: React.MouseEvent, notificationId: number) => {
+  const handleMarkAllAsRead = async (e: React.MouseEvent) => {
+    e.preventDefault()
     e.stopPropagation()
     try {
-      const response = await fetch(`/api/notificaciones/${notificationId}/marcar-leido`, {
-        method: 'POST',
-        credentials: 'include',
-      })
-      if (response.ok) {
-        mutate()
-      }
+      await markAllAsRead()
+      setNotifications(prev => prev.map(n => ({ ...n, leida: true })))
     } catch (error) {
-      console.error('Error marking notification as read:', error)
-    }
-  }
-
-  const handleDeleteNotification = async (e: React.MouseEvent, notificationId: number) => {
-    e.stopPropagation()
-    try {
-      const response = await fetch(`/api/notificaciones/${notificationId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-      if (response.ok) {
-        mutate()
-      }
-    } catch (error) {
-      console.error('Error deleting notification:', error)
+      console.error("Error marking all as read:", error)
     }
   }
 
@@ -115,8 +116,7 @@ export function NotificationsDropdown() {
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge
-              variant="destructive"
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-red-500 text-white"
             >
               {unreadCount}
             </Badge>
@@ -124,78 +124,74 @@ export function NotificationsDropdown() {
           <span className="sr-only">Notificaciones</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
-        <DropdownMenuLabel className="flex items-center justify-between">
-          <span>Notificaciones</span>
+      <DropdownMenuContent align="end" className="w-96 p-0">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <h2 className="text-sm font-semibold">Notificaciones</h2>
           {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
               onClick={handleMarkAllAsRead}
-              className="h-6 px-2 text-xs"
+              className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
             >
-              <Check className="h-3 w-3 mr-1" />
-              Marcar todas
-            </Button>
+              Marcar todas como leídas
+            </button>
           )}
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {isLoading ? (
-          <div className="py-6 text-center text-sm text-muted-foreground">Cargando...</div>
-        ) : error ? (
-          <div className="py-6 text-center text-sm text-red-500">Error al cargar notificaciones</div>
-        ) : data.length === 0 ? (
-          <div className="py-6 text-center text-sm text-muted-foreground">No hay notificaciones</div>
+        </div>
+        
+        {loading ? (
+          <div className="py-8 text-center text-sm text-muted-foreground">Cargando notificaciones...</div>
+        ) : notifications.length === 0 ? (
+          <div className="py-8 text-center text-sm text-muted-foreground">No hay notificaciones</div>
         ) : (
-          data.slice(0, 5).map((notification) => (
-            <DropdownMenuItem key={notification.id} className="flex flex-col items-start p-3 cursor-default hover:bg-muted transition-colors group">
-              <div className="flex items-start gap-3 w-full">
-                <div className="flex gap-2 items-start pt-0.5">
-                  {getNotificationIcon(notification.tipo)}
-                  {!notification.leida && <div className="h-2 w-2 rounded-full bg-primary mt-0.5 flex-shrink-0" />}
-                </div>
-                <div className="flex-1 space-y-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-sm font-medium leading-none">{notification.titulo}</p>
-                    <Badge variant="secondary" className={`text-xs ${getNotificationBadgeColor(notification.tipo)}`}>
-                      {notification.tipo.replace(/mantenimiento_/, '').replace(/_/g, ' ')}
-                    </Badge>
+          <div className="max-h-96 overflow-y-auto">
+            {notifications.slice(0, 5).map((notification, index) => (
+              <div
+                key={notification.id}
+                className={`${
+                  !notification.leida ? getNotificationBgColor(notification.tipo) : "hover:bg-muted/50"
+                } px-4 py-3 border-b border-border last:border-b-0 transition-colors cursor-pointer group`}
+              >
+                <div className="flex gap-3">
+                  <div className="pt-0.5">
+                    {getNotificationIcon(notification.tipo)}
                   </div>
-                  <p className="text-sm text-muted-foreground break-words">{notification.mensaje}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(notification.fecha_envio).toLocaleDateString()} {new Date(notification.fecha_envio).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                  {!notification.leida && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => handleMarkAsRead(e, notification.id)}
-                      className="h-6 w-6 p-0"
-                      title="Marcar como leído"
-                    >
-                      <Check className="h-3 w-3" />
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => handleDeleteNotification(e, notification.id)}
-                    className="h-6 w-6 p-0"
-                    title="Eliminar"
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-foreground leading-snug">
+                          {notification.titulo}
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-1 leading-snug">
+                          {notification.mensaje}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1.5">
+                          {formatTime(notification.fecha)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        {!notification.leida && (
+                          <div className="h-2.5 w-2.5 rounded-full bg-blue-500 flex-shrink-0" />
+                        )}
+                        <button
+                          onClick={(e) => handleMarkAsRead(notification.id, e)}
+                          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded transition-all"
+                          title="Marcar como leído"
+                        >
+                          <X className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </DropdownMenuItem>
-          ))
+            ))}
+          </div>
         )}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem className="justify-center text-center cursor-pointer">
-          Ver todas las notificaciones
-        </DropdownMenuItem>
+
+        <div className="px-4 py-3 border-t border-border bg-muted/30 text-center">
+          <button className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+            Ver todas las notificaciones
+          </button>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   )

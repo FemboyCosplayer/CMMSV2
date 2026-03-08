@@ -1,40 +1,36 @@
 import { PrismaClient } from '@prisma/client'
-import { initializeDatabase } from './db-init'
-
-// Check DATABASE_URL availability
-console.log('[PRISMA] Environment check:')
-console.log('[PRISMA] - DATABASE_URL:', process.env.DATABASE_URL ? '✓ Set' : '✗ Not set')
-console.log('[PRISMA] - MYSQL_URL:', process.env.MYSQL_URL ? '✓ Set' : '✗ Not set')
-
-// Get the database URL from environment
-const dbUrl = process.env.MYSQL_URL || process.env.DATABASE_URL
-
-if (!dbUrl) {
-  console.error('[PRISMA] ⚠️ WARNING: No database URL environment variable found!')
-  console.error('[PRISMA] Please add MYSQL_URL to your Vars in the v0 sidebar')
-  console.error('[PRISMA] Full env vars:', Object.keys(process.env).filter(k => 
-    k.includes('DATABASE') || k.includes('MYSQL') || k.includes('URL')
-  ))
-}
-
-// Log which URL is being used
-if (dbUrl) {
-  console.log('[PRISMA] Using database URL:', dbUrl.substring(0, 30) + '...')
-}
+import { initializeDatabase } from './db/db-init'
 
 const globalForPrisma = globalThis as unknown as { 
-  prisma: PrismaClient
+  prisma: PrismaClient | undefined
   dbInitialized: boolean
   dbInitPromise?: Promise<void>
 }
 
-// Initialize Prisma Client
-// Prisma 5 reads datasource URL from schema.prisma
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({
+// Initialize Prisma Client with error handling
+let prismaInstance: PrismaClient | undefined
+
+function createPrismaInstance(): PrismaClient {
+  if (prismaInstance) {
+    return prismaInstance
+  }
+
+  console.log('[PRISMA] Creating new PrismaClient instance...')
+  
+  prismaInstance = new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   })
+
+  // Handle connection errors
+  prismaInstance.$on('error' as never, (error: any) => {
+    console.error('[PRISMA] Error event:', error)
+  })
+
+  return prismaInstance
+}
+
+// Initialize Prisma Client
+export const prisma = globalForPrisma.prisma || createPrismaInstance()
 
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma
@@ -52,17 +48,25 @@ if (!globalForPrisma.dbInitialized && !globalForPrisma.dbInitPromise) {
     .catch((error) => {
       console.error('[PRISMA] Failed to initialize database:', error)
       globalForPrisma.dbInitPromise = undefined
+      // Don't throw - allow app to continue
     })
 }
 
 // Export a function to wait for initialization
 export async function waitForDbInit() {
-  console.log('[PRISMA] waitForDbInit called, dbInitPromise exists:', !!globalForPrisma.dbInitPromise)
   if (globalForPrisma.dbInitPromise) {
-    console.log('[PRISMA] Waiting for database initialization promise...')
-    await globalForPrisma.dbInitPromise
-    console.log('[PRISMA] Database initialization promise resolved')
-  } else {
-    console.log('[PRISMA] No initialization promise, database may already be initialized:', globalForPrisma.dbInitialized)
+    try {
+      await globalForPrisma.dbInitPromise
+    } catch (error) {
+      console.error('[PRISMA] Error waiting for DB init:', error)
+      // Don't throw - allow operations to proceed
+    }
   }
 }
+
+// Ensure prisma is properly initialized
+if (!prisma) {
+  console.error('[PRISMA] ERROR: Prisma client is not initialized!')
+  process.exit(1)
+}
+

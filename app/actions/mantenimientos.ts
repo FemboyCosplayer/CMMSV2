@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { transformMantenimientoToUI, type Mantenimiento } from "@/lib/mantenimiento-transform"
 import { createAuditLog } from "./logs"
+import { getSession } from "@/lib/auth"
 import { frecuenciaToDias, validateMaintenanceDateRange } from "@/lib/validation/maintenance-validation"
 
 export async function getAllMantenimientos(params?: {
@@ -153,7 +154,9 @@ export async function createMantenimiento(mantenimiento: any, usuarioId?: number
     console.log("[v0] Action: Maintenance created successfully", result)
     
     // Log the creation
+    const session = await getSession()
     await createAuditLog({
+      usuario_id: session?.id,
       accion: 'CREAR',
       modulo: 'MANTENIMIENTOS',
       descripcion: `Mantenimiento ${mantenimiento.tipo} creado para equipo`,
@@ -259,7 +262,9 @@ export async function updateMantenimiento(id: number, mantenimiento: any) {
     console.log("[v0] Action: Maintenance updated successfully", result)
     
     // Log the update
+    const session = await getSession()
     await createAuditLog({
+      usuario_id: session?.id,
       accion: 'EDITAR',
       modulo: 'MANTENIMIENTOS',
       descripcion: `Mantenimiento ${id} actualizado`,
@@ -286,7 +291,9 @@ export async function deleteMantenimiento(id: number) {
     
     // Log the deletion
     if (mantenimiento) {
+      const session = await getSession()
       await createAuditLog({
+        usuario_id: session?.id,
         accion: 'ELIMINAR',
         modulo: 'MANTENIMIENTOS',
         descripcion: `Mantenimiento ${mantenimiento.tipo} eliminado`,

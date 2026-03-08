@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { createAuditLog } from "./logs"
+import { getSession } from "@/lib/auth"
 import bcrypt from "bcryptjs"
 
 export type Usuario = {
@@ -264,7 +265,9 @@ export async function saveUsuario(usuario: UsuarioWithPassword): Promise<{
       }
       
       // Log the update
+      const session = await getSession()
       await createAuditLog({
+        usuario_id: session?.id,
         accion: 'EDITAR',
         modulo: 'USUARIOS',
         descripcion: `Usuario ${usuario.nombre} actualizado`,
@@ -322,7 +325,9 @@ export async function saveUsuario(usuario: UsuarioWithPassword): Promise<{
       }
       
       // Log the creation
+      const session = await getSession()
       await createAuditLog({
+        usuario_id: session?.id,
         accion: 'CREAR',
         modulo: 'USUARIOS',
         descripcion: `Nuevo usuario ${usuario.nombre} creado`,
@@ -379,7 +384,9 @@ export async function removeUsuario(id: number, currentUserId?: number): Promise
     })
     
     // Log the deletion
+    const session = await getSession()
     await createAuditLog({
+      usuario_id: session?.id,
       accion: 'ELIMINAR',
       modulo: 'USUARIOS',
       descripcion: `Usuario ${usuario.nombre} eliminado`,

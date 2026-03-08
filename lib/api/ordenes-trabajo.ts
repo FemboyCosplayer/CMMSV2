@@ -247,7 +247,7 @@ export async function getOrdenTrabajo(id: number): Promise<OrdenTrabajo> {
   return transformOrdenFromAPI(response)
 }
 
-export async function createOrdenTrabajo(orden: Partial<OrdenTrabajo>): Promise<OrdenTrabajo> {
+export async function createOrdenTrabajo(orden: Partial<OrdenTrabajo>, usuarioId?: number): Promise<OrdenTrabajo> {
   console.log("[v0] createOrdenTrabajo - Input data:", orden)
   const transformedData = transformOrdenToAPI(orden)
   console.log("[v0] createOrdenTrabajo - Sending to API:", transformedData)
@@ -256,7 +256,7 @@ export async function createOrdenTrabajo(orden: Partial<OrdenTrabajo>): Promise<
   if (typeof window === 'undefined') {
     console.log("[v0] createOrdenTrabajo - Using server DB function")
     try {
-      const result = await createOrdenDB(transformedData)
+      const result = await createOrdenDB(transformedData, usuarioId)
       console.log("[v0] createOrdenTrabajo - DB response:", result)
       return result
     } catch (error) {
@@ -273,14 +273,14 @@ export async function createOrdenTrabajo(orden: Partial<OrdenTrabajo>): Promise<
   return transformOrdenFromAPI(response)
 }
 
-export async function updateOrdenTrabajo(id: number, orden: Partial<OrdenTrabajo>): Promise<OrdenTrabajo> {
+export async function updateOrdenTrabajo(id: number, orden: Partial<OrdenTrabajo>, usuarioId?: number): Promise<OrdenTrabajo> {
   const transformedData = transformOrdenToAPI(orden)
 
   // If on server side, use direct DB call
   if (typeof window === 'undefined') {
     console.log("[v0] updateOrdenTrabajo - Using server DB function")
     try {
-      const result = await updateOrdenDB(id, transformedData)
+      const result = await updateOrdenDB(id, transformedData, usuarioId)
       return result
     } catch (error) {
       console.error("[v0] updateOrdenTrabajo - DB Error:", error)
@@ -293,14 +293,14 @@ export async function updateOrdenTrabajo(id: number, orden: Partial<OrdenTrabajo
   return transformOrdenFromAPI(response)
 }
 
-export async function deleteOrdenTrabajo(id: number): Promise<boolean> {
+export async function deleteOrdenTrabajo(id: number, usuarioId?: number): Promise<boolean> {
   console.log("[v0] deleteOrdenTrabajo - Attempting to delete orden with id:", id)
 
   // If on server side, use direct DB call
   if (typeof window === 'undefined') {
     console.log("[v0] deleteOrdenTrabajo - Using server DB function")
     try {
-      const result = await deleteOrdenDB(id)
+      const result = await deleteOrdenDB(id, usuarioId)
       console.log("[v0] deleteOrdenTrabajo - Deletion successful:", result)
       return result
     } catch (error: any) {
@@ -330,14 +330,14 @@ export async function deleteOrdenTrabajo(id: number): Promise<boolean> {
   }
 }
 
-export async function asignarTecnico(ordenId: number, tecnicoId: number): Promise<OrdenTrabajo> {
+export async function asignarTecnico(ordenId: number, tecnicoId: number, usuarioId?: number): Promise<OrdenTrabajo> {
   console.log("[v0] asignarTecnico - ordenId:", ordenId, "tecnicoId:", tecnicoId)
 
   // If on server side, use direct DB call
   if (typeof window === 'undefined') {
     console.log("[v0] asignarTecnico - Using server DB function")
     try {
-      const result = await asignarTecnicoDB(ordenId, tecnicoId)
+      const result = await asignarTecnicoDB(ordenId, tecnicoId, usuarioId)
       console.log("[v0] asignarTecnico - Response:", result)
       return result
     } catch (error) {
@@ -359,6 +359,7 @@ export async function cambiarEstado(
   ordenId: number,
   nuevoEstado: string,
   observaciones?: string,
+  usuarioId?: number,
 ): Promise<OrdenTrabajo> {
   console.log("[v0] cambiarEstado - ordenId:", ordenId, "estado:", nuevoEstado, "observaciones:", observaciones)
 
@@ -368,7 +369,7 @@ export async function cambiarEstado(
   if (typeof window === 'undefined') {
     console.log("[v0] cambiarEstado - Using server DB function")
     try {
-      const result = await cambiarEstadoDB(ordenId, estadoTransformado, observaciones)
+      const result = await cambiarEstadoDB(ordenId, estadoTransformado, observaciones, usuarioId)
       console.log("[v0] cambiarEstado - Response:", result)
       return result
     } catch (error) {

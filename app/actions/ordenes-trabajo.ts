@@ -1,5 +1,6 @@
 "use server"
 
+import { getSession } from "@/lib/auth"
 import {
   getOrdenesTrabajo,
   getOrdenTrabajo,
@@ -53,12 +54,15 @@ export async function saveOrdenTrabajo(orden: Partial<OrdenTrabajo>): Promise<{ 
   try {
     console.log("[v0] saveOrdenTrabajo - Input data:", JSON.stringify(orden, null, 2))
 
+    const session = await getSession()
+    const usuarioId = session?.id
+
     if (orden.id) {
-      const result = await updateOrdenTrabajo(orden.id, orden)
+      const result = await updateOrdenTrabajo(orden.id, orden, usuarioId)
       console.log("[v0] saveOrdenTrabajo - Update successful:", result)
       return { success: true, data: result }
     } else {
-      const result = await createOrdenTrabajo(orden)
+      const result = await createOrdenTrabajo(orden, usuarioId)
       console.log("[v0] saveOrdenTrabajo - Create successful:", result)
       return { success: true, data: result }
     }
@@ -77,7 +81,9 @@ export async function removeOrdenTrabajo(id: number): Promise<{ success: boolean
   console.log("[v0] removeOrdenTrabajo - Starting deletion for id:", id)
 
   try {
-    const result = await deleteOrdenTrabajo(id)
+    const session = await getSession()
+    const usuarioId = session?.id
+    const result = await deleteOrdenTrabajo(id, usuarioId)
     console.log("[v0] removeOrdenTrabajo - deleteOrdenTrabajo succeeded, result:", result)
     return { success: true }
   } catch (error) {
@@ -90,7 +96,9 @@ export async function removeOrdenTrabajo(id: number): Promise<{ success: boolean
 export async function asignarTecnicoAOrden(ordenId: number, tecnicoId: number): Promise<{ success: boolean; data?: OrdenTrabajo; error?: string }> {
   try {
     console.log("[v0] asignarTecnicoAOrden - Action called with ordenId:", ordenId, "tecnicoId:", tecnicoId)
-    const result = await asignarTecnico(ordenId, tecnicoId)
+    const session = await getSession()
+    const usuarioId = session?.id
+    const result = await asignarTecnico(ordenId, tecnicoId, usuarioId)
     console.log("[v0] asignarTecnicoAOrden - Success:", result)
     return { success: true, data: result }
   } catch (error) {
@@ -107,7 +115,9 @@ export async function cambiarEstadoOrden(
 ): Promise<{ success: boolean; data?: OrdenTrabajo; error?: string }> {
   try {
     console.log("[v0] cambiarEstadoOrden - Action called with ordenId:", ordenId, "estado:", nuevoEstado)
-    const result = await cambiarEstado(ordenId, nuevoEstado, observaciones)
+    const session = await getSession()
+    const usuarioId = session?.id
+    const result = await cambiarEstado(ordenId, nuevoEstado, observaciones, usuarioId)
     console.log("[v0] cambiarEstadoOrden - Success:", result)
     return { success: true, data: result }
   } catch (error) {

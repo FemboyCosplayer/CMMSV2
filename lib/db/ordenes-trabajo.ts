@@ -1,5 +1,4 @@
 import { prisma } from '@/lib/prisma'
-import { getSession } from '@/lib/auth'
 import { createAuditLog } from '@/app/actions/logs'
 import type { OrdenTrabajo } from '@/lib/api/ordenes-trabajo'
 
@@ -28,7 +27,7 @@ function transformFromDB(record: any): OrdenTrabajo {
   }
 }
 
-export async function createOrdenDB(data: any): Promise<OrdenTrabajo> {
+export async function createOrdenDB(data: any, usuarioId?: number): Promise<OrdenTrabajo> {
   console.log('[v0] createOrdenDB - Creating with data:', data)
 
   try {
@@ -59,9 +58,8 @@ export async function createOrdenDB(data: any): Promise<OrdenTrabajo> {
     console.log('[v0] createOrdenDB - Created orden:', orden.id)
     
     // Log the creation
-    const session = await getSession()
     await createAuditLog({
-      usuario_id: session?.id,
+      usuario_id: usuarioId,
       accion: 'CREAR',
       modulo: 'ORDENES',
       descripcion: `Orden de trabajo ${orden.numero_orden} creada`,
@@ -150,7 +148,7 @@ export async function getOrdenesDB(filters?: any): Promise<any> {
   }
 }
 
-export async function updateOrdenDB(id: number, data: any): Promise<OrdenTrabajo> {
+export async function updateOrdenDB(id: number, data: any, usuarioId?: number): Promise<OrdenTrabajo> {
   console.log('[v0] updateOrdenDB - Updating orden', id, 'with data:', data)
 
   try {
@@ -188,9 +186,8 @@ export async function updateOrdenDB(id: number, data: any): Promise<OrdenTrabajo
     console.log('[v0] updateOrdenDB - Updated orden:', id)
     
     // Log the update
-    const session = await getSession()
     await createAuditLog({
-      usuario_id: session?.id,
+      usuario_id: usuarioId,
       accion: 'EDITAR',
       modulo: 'ORDENES',
       descripcion: `Orden de trabajo ${orden.numero_orden} actualizada`,
@@ -204,7 +201,7 @@ export async function updateOrdenDB(id: number, data: any): Promise<OrdenTrabajo
   }
 }
 
-export async function deleteOrdenDB(id: number): Promise<boolean> {
+export async function deleteOrdenDB(id: number, usuarioId?: number): Promise<boolean> {
   console.log('[v0] deleteOrdenDB - Deleting orden', id)
 
   try {
@@ -221,9 +218,8 @@ export async function deleteOrdenDB(id: number): Promise<boolean> {
     
     // Log the deletion
     if (orden) {
-      const session = await getSession()
       await createAuditLog({
-        usuario_id: session?.id,
+        usuario_id: usuarioId,
         accion: 'ELIMINAR',
         modulo: 'ORDENES',
         descripcion: `Orden de trabajo ${orden.numero_orden} eliminada`,
@@ -238,7 +234,7 @@ export async function deleteOrdenDB(id: number): Promise<boolean> {
   }
 }
 
-export async function asignarTecnicoDB(ordenId: number, tecnicoId: number): Promise<OrdenTrabajo> {
+export async function asignarTecnicoDB(ordenId: number, tecnicoId: number, usuarioId?: number): Promise<OrdenTrabajo> {
   console.log('[v0] asignarTecnicoDB - Assigning tecnico', tecnicoId, 'to orden', ordenId)
 
   try {
@@ -258,9 +254,8 @@ export async function asignarTecnicoDB(ordenId: number, tecnicoId: number): Prom
     console.log('[v0] asignarTecnicoDB - Assigned tecnico')
     
     // Log the assignment
-    const session = await getSession()
     await createAuditLog({
-      usuario_id: session?.id,
+      usuario_id: usuarioId,
       accion: 'EDITAR',
       modulo: 'ORDENES',
       descripcion: `Técnico asignado a orden de trabajo ${orden.numero_orden}`,
@@ -278,6 +273,7 @@ export async function cambiarEstadoDB(
   ordenId: number,
   nuevoEstado: string,
   observaciones?: string,
+  usuarioId?: number,
 ): Promise<OrdenTrabajo> {
   console.log('[v0] cambiarEstadoDB - Changing estado of orden', ordenId, 'to', nuevoEstado, 'observaciones:', observaciones)
 
@@ -304,9 +300,8 @@ export async function cambiarEstadoDB(
     console.log('[v0] cambiarEstadoDB - Changed estado')
     
     // Log the status change
-    const session = await getSession()
     await createAuditLog({
-      usuario_id: session?.id,
+      usuario_id: usuarioId,
       accion: 'EDITAR',
       modulo: 'ORDENES',
       descripcion: `Estado de orden de trabajo ${orden.numero_orden} cambiado a ${nuevoEstado}`,
